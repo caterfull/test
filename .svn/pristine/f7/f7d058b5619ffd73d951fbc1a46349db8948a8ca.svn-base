@@ -1,0 +1,65 @@
+{% extends 'base2.html' %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+
+
+{% block title %} Dashboard {% endblock %}
+{% block item_dashboard %} active {% endblock %}
+
+{% block content_header %}
+    <h1>
+    <i class="fa fa-dashboard"></i>
+        Dashboard
+        <small>Panel de control</small>
+    </h1>
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+{% endblock %}
+
+{% block main_content %}
+   <div class="row caterfull-info-box">
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <div class="info-box">
+                <span class="info-box-icon bg-aqua"><i class="fa fa-calendar"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Disponibilidad</span>
+                  <span class="info-box-number">90<small>%</small></span>
+                </div><!-- /.info-box-content -->
+              </div><!-- /.info-box -->
+            </div><!-- /.col -->
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <div class="info-box">
+                <span class="info-box-icon bg-red"><i class="fa fa-book"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Invoices</span>
+                  <span class="info-box-number">150</span>
+                </div><!-- /.info-box-content -->
+              </div><!-- /.info-box -->
+            </div><!-- /.col -->
+
+            <!-- fix for small devices only -->
+            <div class="clearfix visible-sm-block"></div>
+
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <div class="info-box">
+                <span class="info-box-icon bg-green"><i class="fa fa-dollar"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Sales</span>
+                  <span class="info-box-number">$ 5 600.00</span>
+                </div><!-- /.info-box-content -->
+              </div><!-- /.info-box -->
+            </div><!-- /.col -->
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <div class="info-box">
+                <span class="info-box-icon bg-yellow"><i class="fa fa-user"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">New clients</span>
+                  <span class="info-box-number">25</span>
+                </div><!-- /.info-box-content -->
+              </div><!-- /.info-box -->
+            </div><!-- /.col -->
+          </div>
+    <hr/>
+{% endblock %}

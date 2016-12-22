@@ -1,0 +1,23 @@
+from datetime import datetime
+from django.contrib.auth.models import Group
+from django.core.management.base import BaseCommand
+from base.models import Subscription, N_SubscriptionStatus
+from caterfull import settings
+
+
+class Command(BaseCommand):
+
+    def handle(self, *args, **options):
+        st = N_SubscriptionStatus.objects.filter(pk=N_SubscriptionStatus.PENDIND).first()
+        d = datetime.today().date()
+        subs_list = Subscription.objects.filter(status=st).filter(expire_date__lt=d)
+        group_name = settings.BUSINESS_TRIAL
+        group_to_remove = Group.objects.get(name=group_name)
+        group_to_add = Group.objects.get(name=settings.BUSINESS_BASIC)
+        for sub in subs_list:
+            user = sub.business.owner
+            user.groups.remove(group_to_remove)
+            user.groups.add(group_to_add)
+
+
+

@@ -1,0 +1,17 @@
+/**
+ * Created by amado on 18/11/16.
+ */
+$(document).ready(function(){
+
+
+
+
+    //$('#add_item').click(function(event){
+    //    event.preventDefault();
+    //    $('#form_container').show();
+    //
+    //});
+  // console.debug($("#items_table").classList);
+
+});
+

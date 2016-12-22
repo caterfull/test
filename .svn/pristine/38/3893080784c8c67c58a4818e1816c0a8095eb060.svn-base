@@ -1,0 +1,86 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Website - Gallery {% endblock %}
+{% block main_content %}
+
+    {% include 'business_site/website_wizard.html' with gallery_form=form gallery_status="active" basic_info_status="complete" template_status="complete"%}
+
+
+
+{% endblock %}
+
+{% block js_block_one %}
+    <script>
+        {#    #}
+        $(document).ready(function () {
+
+            function PutIdRadioCheck() {
+                var i;
+                var j;
+                var long = $('#images_table > tbody > tr').length
+                for (i = 0; i < long; i++) {
+                    var cant = $('#images_table > tbody > tr')[i].children.length;
+                    for (j = 0; j < cant; j++) {
+                        if ($('#images_table > tbody > tr')[i].children[j].firstChild.checked == true) {
+                            val = $('#images_table > tbody > tr')[i].children[j].firstChild.attributes['data-elem-id'].value;
+                            $('#as_back').val(val);
+                        }
+                    }
+                }
+            }
+
+            {#        $('#gallery_form').submit(function(){#}
+            {#            PutIdRadioCheck();#}
+            {#        });#}
+
+            $('#next').click(function (e) {
+                e.preventDefault();
+                PutIdRadioCheck();
+                $('#gallery_form').submit();
+            })
+
+
+            $('#form_image').ajaxForm({
+                success: function (response) {
+                    UpdateDataTable();
+                    ClearForm();
+                },
+                error:function(data,status){
+                    var error = data.responseJSON;
+                    console.debug(error.errorMessage);
+                    console.debug(status);
+                }
+            });
+
+            function ClearForm() {
+                $('#id_name').val('');
+                document.getElementById("id_image").value = "";
+            }
+
+            function UpdateDataTable() {
+                $.ajax({
+                    type: 'GET',
+                    url: '/site/photos/',
+                    success: function (data) {
+                        console.debug(data);
+                        $("#tableContainer").empty().append(data);
+                        $('#images_table').dataTable();
+                    }
+                });
+            }
+
+        });
+        $(function () {
+            // Initialize Datatable
+            $('#images_table').dataTable();
+        });
+    </script>
+
+{% endblock %}
+{% block css_block %}
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatables/dataTables.bootstrap.css' %}"/>
+{% endblock %}

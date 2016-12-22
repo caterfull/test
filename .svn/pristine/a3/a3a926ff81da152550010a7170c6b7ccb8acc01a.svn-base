@@ -1,0 +1,13 @@
+<fieldset>
+    <legend>Evento</legend>
+    <div>
+       Nombre del evento: {{ event.name }}
+    </div>
+    <div>Direccion del evento: {{ event.address }}</div>
+    <div>Fecha del Evento: {{ event.event_date }}</div>
+    <div>Fecha Limite para el pago: {{ event.due_date }}</div>
+    {% if proposal.client_message %}
+        <div>Comentario: {{ proposal.client_message }}</div>
+    {% endif %}
+
+</fieldset>

@@ -1,0 +1,6 @@
+
+Nombre: {{ customer.full_name }}
+Correo: {{ customer.email  }}
+Compania: {{ customer.company }}
+Comentarios: {{ customer.comments }}
+

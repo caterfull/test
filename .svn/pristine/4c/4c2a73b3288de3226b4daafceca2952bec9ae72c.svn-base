@@ -1,0 +1,49 @@
+"""caterfull URL Configuration
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/1.9/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  url(r'^$', Home.as_view(), name='home')
+Including another URLconf
+    1. Add an import:  from blog import urls as blog_urls
+    2. Import the include() function: from django.conf.urls import url, include
+    3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
+"""
+from django.conf.urls import url
+from django.contrib.auth.decorators import login_required
+from base.views.business import BusinessRegister, BusinessProfile, PaymentOrder
+from base.views.customer_view import CustomerView, CustomeRegisterView, CustomerRemoveView, CustomerEditView, \
+    CustomerSelectView
+from base.views.dashboard_view import Dashboard
+from base.views.invoice import EventCreate, ProposalItemsView, ProposalView, ItemView, ItemDelete, ProposalAccept, \
+    ProposalDeny, ProposalEmailSend
+
+urlpatterns = [
+    url(r'^dashboard/$', login_required(Dashboard), name="dashboard"),
+    url(r'^customers/$', login_required(CustomerView.as_view()), name="customers"),
+    url(r'^customers/(?P<id>\d+)/$', login_required(CustomerView.as_view()), name="customer"),
+    url(r'^customers/add$', login_required(CustomeRegisterView.as_view()), name="add_customer"),
+    url(r'^customers/delete/(?P<id>\d+)/$', login_required(CustomerRemoveView.as_view()), name="delete_customer"),
+    url(r'^customers/edit/(?P<id>\d+)/$', login_required(CustomerEditView.as_view()), name="edit_customer"),
+    url(r'^customers/list/$', login_required(CustomerSelectView.as_view()), name="customer_list"),
+    url(r'^business/register$', BusinessRegister.as_view(), name="business_register"),
+    url(r'^business/profile/$', login_required(BusinessProfile.as_view()), name="business_profile"),
+    url(r'^business/subscription/payment/$', login_required(PaymentOrder.as_view()), name="payment_subs"),
+    url(r'^proposal/event/$', login_required(EventCreate.as_view()), name="event_create"),
+    url(r'^proposal/event/(?P<id>\d+)/$', login_required(EventCreate.as_view()), name="event_edit"),
+    url(r'^proposal/(?P<id>\d+)/items/$', login_required(ProposalItemsView.as_view()), name="proposal_items"),
+    url(r'^proposal/(?P<id>\d+)/items/(?P<id_item>\d+)/$', login_required(ItemView.as_view()), name="proposal_item_edit"),
+    url(r'^proposal/(?P<id>\d+)/items/(?P<id_item>\d+)/delete/$', login_required(ItemDelete.as_view()), name="proposal_item_delete"),
+    url(r'^proposal/$', login_required(ProposalView.as_view()), name="proposal_list"),
+    url(r'^proposal/(?P<id>\d+)/$', login_required(ProposalView.as_view()), name="proposal_detalles"),
+    url(r'^proposal/send/(?P<id>\d+)/$', login_required(ProposalEmailSend.as_view()), name="proposal_send"),
+    url(r'^proposal/accept/(?P<pidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z_\-]+)/$', ProposalAccept.as_view(), name="accept_proposal"),
+    url(r'^proposal/deny/(?P<pidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z_\-]+)/$', ProposalDeny.as_view(), name="deny_proposal"),
+
+
+]

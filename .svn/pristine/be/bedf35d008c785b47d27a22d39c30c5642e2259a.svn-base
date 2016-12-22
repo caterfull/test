@@ -1,0 +1,57 @@
+  $(document).ready(function(){
+
+      function set_csrf_token(){
+         var csrftoken = $('input[name="csrfmiddlewaretoken"]').val();
+
+                            function csrfSafeMethod(method) {
+                                // these HTTP methods do not require CSRF protection
+                                return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+                            }
+
+                            $.ajaxSetup({
+                                beforeSend: function (xhr, settings) {
+                                    if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                                        //alert(csrftoken);
+                                    }
+                                }
+                            });
+    }
+
+      $('#button_save_item').click(function(event){
+          event.preventDefault();
+          set_csrf_token();
+
+          var url = $('#item_form').attr('action');
+          var load_url = $('#items_container').attr('data-url-load');
+
+          var data = $('#item_form').serialize();
+          $.ajax({url:url, data:data,statusCode:{
+              200:function(response){
+                  console.log(load_url);
+                  $.get(load_url, '', function(response){
+                     $('#items_container').html(response);
+                      $('#form_container').hide();
+                  });
+              },
+              400:function(response){
+                  $('#form_container').html(response.responseText);
+              },
+              404:function(){
+
+              },
+              500:function(){
+
+              }
+          },type:'POST'})
+      });
+
+      $('#item_delete').click(function(event){
+          event.preventDefault();
+          var url = $(this).attr('data-url');
+          set_csrf_token();
+          $.post(url,{},function(response){
+          //    DO whatever you want to do.
+          });
+      });
+  });

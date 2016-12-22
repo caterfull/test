@@ -1,0 +1,36 @@
+from smtplib import SMTPException
+from threading import Thread
+
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail.message import EmailMultiAlternatives
+from django.core.urlresolvers import reverse
+from django.template import loader
+from django.template.context import Context
+
+__author__ = 'amado'
+
+def task_sendmail_confirm_registration(order):
+
+    subject = "Confirmacion de correo"
+    from_email = settings.ADMIN_EMAIL
+    to = order.user.email
+    template = loader.get_template("base/email/registration_confirm.html")
+    domain = settings.CATERFULL_BASE_URL
+    token = default_token_generator.make_token(order.user)
+    context = Context({'user':order.user,'domain':domain,'key':order.key,'token':token})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    try:
+        msg.send(fail_silently=False)
+
+        order.pending = False
+        order.save()
+    except SMTPException as e:
+        print(e)
+
+def start_thread(function, *args):
+    def inner_function():
+        function(*args)
+    thread = Thread(target=inner_function)
+    thread.start()

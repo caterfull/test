@@ -1,0 +1,5 @@
+{% load widget_tweaks %}
+<div id="customer_field">
+        Cliente {% render_field form.customer %}
+        <div>{{ form.customer.errors }}</div>
+</div>

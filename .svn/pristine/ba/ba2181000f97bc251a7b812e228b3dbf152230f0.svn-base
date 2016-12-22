@@ -1,0 +1,30 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+
+
+{% block title %} Sign up {% endblock %}
+{% block main_content %}
+
+    <form method="post" class="form_ps_change">
+        <div class="form-container">
+            {% include 'base/password_change_partial.html' %}</div>
+    </form>
+
+{% endblock %}
+
+
+{% block js_block_one %}
+
+    <script>
+        $(document).ready(function () {
+            $('.form_ps_change').ajaxForm(function (responsde) {
+                $('.form-container').html(responsde);
+            });
+        });
+    </script>
+
+{% endblock %}

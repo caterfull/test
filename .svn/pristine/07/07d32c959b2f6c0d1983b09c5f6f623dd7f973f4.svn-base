@@ -1,0 +1,77 @@
+{% load i18n admin_static %}
+
+<form method="POST" action="/customers/add" id="newCustomerForm">
+    {% load widget_tweaks %}
+    {% csrf_token %}
+
+    <div class="form-group col-xs-12 col-sm-2 {% if form.prefix.errors %} has-error {% endif %}">
+        <label> {{ form.prefix.label }}</label>
+        {% render_field form.prefix class="form-control" %}
+        {% if form.prefix.errors %}
+            <div class="text-validation-error"><i class="fa fa-warning"></i> {{ form.prefix.errors }} </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group col-xs-12 col-sm-5 {% if form.first_name.errors %} has-error {% endif %}">
+        <label> {{ form.first_name.label }}</label>
+        {% render_field form.first_name class="form-control" %}
+
+        {% for error in  form.first_name.errors %}
+             <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-group col-xs-12 col-sm-5 {% if form.last_name.errors %} has-error {% endif %}">
+        <label> {{ form.last_name.label }}</label>
+        {% render_field form.last_name class="form-control" %}
+        {% for error in  form.last_name.errors %}
+             <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-group col-xs-12 col-sm-2 {% if form.suffix.errors %} has-error {% endif %}">
+        <label> {{ form.suffix.label }}</label>
+        {% render_field form.suffix class="form-control" %}
+        {% if form.suffix.errors %}
+            <div class="text-validation-error"><i class="fa fa-warning"></i> {{ form.suffix.errors }} </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group col-xs-12 col-sm-5 {% if form.email.errors %} has-error {% endif %}">
+        <label> {{ form.email.label }}</label>
+        {% render_field form.email class="form-control" %}
+       {% for error in  form.email.errors %}
+             <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+        {% endfor %}
+        {% if errors.unique_email %}
+            <div class="text-validation-error"><i class="fa fa-warning"></i>  {{ errors.unique_email }} </div>
+        {% endif %}
+    </div>
+
+    <div class="form-group col-xs-12 col-sm-5 {% if form.company.errors %} has-error {% endif %}">
+        <label> {{ form.company.label }}</label>
+        {% render_field form.company class="form-control" %}
+        {% if form.company.errors %}
+            <div class="text-validation-error"><i class="fa fa-warning"></i> {{ form.company.errors }} </div>
+        {% endif %}
+    </div>
+{#    <div>#}
+{#        Email: {% render_field form.email %}#}
+{#        <div>#}
+{#            {{ form.email.errors }}#}
+{#        </div>#}
+{#        {% if errors.unique_email %}#}
+{#            <div>#}
+{#                {{ errors.unique_email }}#}
+{#            </div>#}
+{#        {% endif %}#}
+{#    </div>#}
+    <div class="form-group col-xs-12   {% if form.comments.errors %} has-error {% endif %}">
+        <label> {{ form.comments.label }}</label>
+        {% render_field form.comments class="form-control" %}
+        {% if form.comments.errors %}
+            <div class="text-validation-error"><i class="fa fa-warning"></i> {{ form.comments.errors }} </div>
+        {% endif %}
+    </div>
+
+</form>

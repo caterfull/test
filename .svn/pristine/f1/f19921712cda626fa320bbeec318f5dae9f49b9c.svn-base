@@ -1,0 +1,15 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Website - Template {% endblock %}
+{% block main_content %}
+    <form action="" method="post" >
+    {% csrf_token %}
+       {{ form }}
+    <input type="submit" value="Next">
+    </form>
+
+{% endblock %}

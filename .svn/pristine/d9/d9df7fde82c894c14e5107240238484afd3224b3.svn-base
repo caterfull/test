@@ -1,0 +1,39 @@
+"""caterfull URL Configuration
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/1.9/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  url(r'^$', Home.as_view(), name='home')
+Including another URLconf
+    1. Add an import:  from blog import urls as blog_urls
+    2. Import the include() function: from django.conf.urls import url, include
+    3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
+"""
+from django.conf.urls import url
+from django.contrib.auth.decorators import login_required
+from base.views.business import BusinessRegister, BusinessProfile, PaymentOrder
+from base.views.customer_view import CustomerView, CustomeRegisterView, CustomerRemoveView, CustomerEditView, \
+    CustomerSelectView
+from base.views.dashboard_view import Dashboard
+from base.views.invoice import EventCreate
+
+urlpatterns = [
+    url(r'^dashboard/$', login_required(Dashboard), name="dashboard"),
+    url(r'^customers/$', login_required(CustomerView.as_view()), name="customers"),
+    url(r'^customers/(?P<id>\d+)/$', login_required(CustomerView.as_view()), name="customer"),
+    url(r'^customers/add$', login_required(CustomeRegisterView.as_view()), name="add_customer"),
+    url(r'^customers/delete/(?P<id>\d+)/$', login_required(CustomerRemoveView.as_view()), name="delete_customer"),
+    url(r'^customers/edit/(?P<id>\d+)/$', login_required(CustomerEditView.as_view()), name="edit_customer"),
+    url(r'^customers/list/$', login_required(CustomerSelectView.as_view()), name="customer_list"),
+    url(r'^business/register$', BusinessRegister.as_view(), name="business_register"),
+    url(r'^business/profile/$', login_required(BusinessProfile.as_view()), name="business_profile"),
+    url(r'^business/subscription/payment/$', login_required(PaymentOrder.as_view()), name="payment_subs"),
+    url(r'^event/add/$', login_required(EventCreate.as_view()), name="event_create"),
+    url(r'^event/edit/(?P<id>\d+)/$', login_required(EventCreate.as_view()), name="event_edit"),
+
+]

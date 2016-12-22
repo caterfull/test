@@ -1,0 +1,78 @@
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+<div class="col-xs-12">
+
+    <form method="POST" action="
+
+            {% if item %}{% url 'proposal_item_edit' proposal.id item.id %}{% else %}{% url 'proposal_items_step' proposal.id %}{% endif %}"
+          id="item_form" data-item-id="{% if item %}{{ item.id }}{% endif %}">
+        {% csrf_token %}
+
+        <div class="form-group col-xs-12 col-sm-6 {% if form.oferta.errors %} has-error {% endif %}">
+            <label> {{ form.oferta.label }}</label>
+            {% render_field form.oferta class="form-control" %}
+
+            {% for error in  form.oferta.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+
+        </div>
+        {#Sustituir esto#}
+        <div class="form-group col-xs-12 col-sm-2  ">
+            <label> {{ form.quantity.label }}</label>
+            {% render_field form.quantity class="form-control" %}
+
+            {% for error in  form.quantity.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group col-xs-12 col-sm-2 {% if form.unit_cost.errors %} has-error {% endif %}">
+            <label> {{ form.unit_cost.label }}</label>
+            {% render_field form.unit_cost class="form-control" %}
+
+            {% for error in  form.unit_cost.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group col-xs-12 col-sm-2 {% if form.discount.errors %} has-error {% endif %}">
+            <label> {{ form.discount.label }}</label>
+            {% render_field form.discount class="form-control" %}
+
+            {% for error in  form.discount.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+
+
+        <div class="form-group col-xs-12 col-sm-12 {% if form.description.errors %} has-error {% endif %}">
+            <label> {{ form.description.label }}</label>
+            {% render_field form.description class="form-control" %}
+
+            {% for error in  form.description.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+
+
+        {#    #}
+        {#    <div>#}
+        {#        Descripcion: {% render_field form.description %}#}
+        {#        <div>{{ form.description.errors }}</div>#}
+        {#    </div>#}
+
+        {#    <button id="button_save_item">Guardar</button>#}
+        {#    <input type="reset" value="Cancelar"/>#}
+    </form>
+</div>
+
+{##}
+{#<div> Tax: {{ TAX }}</div>#}
+{#{% if item %}#}
+{#    <button id="item_delete" data-url="{% url 'proposal_item_delete' proposal.id item.id %}">Eliminar</button>#}
+{#{% endif %}#}
+
+
+{#<script type="text/javascript" src="{% static 'base/js/invoice/item_form.js' %}"></script>#}

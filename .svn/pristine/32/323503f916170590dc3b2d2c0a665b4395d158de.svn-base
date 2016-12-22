@@ -1,0 +1,12 @@
+{% load staticfiles %}
+
+{% include 'base/invoice/includes/event.html' with event=proposal.event %}
+<button>Editar</button>
+<button>PDF</button>
+{% if proposal.may_send_email %}
+    {% csrf_token %}
+    <button id="send_proposal" data-url="{% url 'proposal_send' proposal.id %}">Enviar</button>
+{% endif %}
+
+<script src="{% static 'base/js/jquery.js' %}"></script>
+<script src="{% static 'base/js/invoice/send_proposal.js' %}"></script>

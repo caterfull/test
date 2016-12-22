@@ -1,0 +1,3 @@
+Toma chocolate...
+Evento {{ invoice.proposal.event.name }}
+Numero {{ invoice.number }}

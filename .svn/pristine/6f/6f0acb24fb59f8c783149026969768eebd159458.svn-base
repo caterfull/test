@@ -1,0 +1,6 @@
+{% include 'base/invoice/includes/event.html' with event=proposal.event %}
+<button>Editar</button>
+<button>PDF</button>
+{% if proposal.may_send_email %}
+    <button>Enviar</button>
+{% endif %}

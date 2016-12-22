@@ -1,0 +1,19 @@
+from django.conf import settings
+from base.models import Business
+
+
+def subscription_status(request):
+
+    user = request.user
+    groups = user.groups.all()
+
+    PENDING = groups.count() and groups.first().name == settings.BUSINESS_TRIAL
+    ACTIVE = groups.count() and groups.first().name == settings.BUSINESS_MEMBER
+    EXPIRED = groups.count() and groups.first().name == settings.BUSINESS_BASIC
+    return {'PENDING':PENDING,'ACTIVE':ACTIVE, 'EXPIRED':EXPIRED}
+
+def business_data(request):
+    user = request.user
+    b = Business.objects.filter(owner=user).only('tax').first()
+    return {'TAX':b.tax}
+

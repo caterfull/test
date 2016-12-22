@@ -1,0 +1,197 @@
+<div class="proposal-details ">
+    <fieldset>
+        <legend>Datos del evento</legend>
+        <h3>{{ event.name | capfirst }}</h3>
+
+        <div class="no-print">
+
+            <p class="col-xs-12 col-sm-3 no-padding-left"><i class="fa fa-map-marker"></i> {{ event.address }}</p>
+
+            <p class="col-xs-12 col-sm-3"><i class="fa fa-calendar"></i> {{ event.event_date }}</p>
+
+            <p class="col-xs-12 col-sm-3"><i class="fa fa-dollar"></i> {{ event.event_date }}</p>
+
+            {% if proposal.client_message %}
+                <p class="col-xs-12 no-padding"><i class="fa fa-comment"></i> {{ proposal.client_message }}</p>
+
+            {% endif %}
+        </div>
+        <div class="print">
+
+            <p class="col-xs-12 no-padding-left"><i class="fa fa-map-marker"></i> {{ event.address }}</p>
+
+            <p class="col-xs-6 no-padding-left"><i class="fa fa-calendar"></i> {{ event.event_date }}</p>
+
+            <p class="col-xs-6 no-padding-right"><i class="fa fa-dollar"></i> {{ event.event_date }}</p>
+
+            {% if proposal.client_message %}
+                <p class="col-xs-12 no-padding"><i class="fa fa-comment"></i> {{ proposal.client_message }}</p>
+
+            {% endif %}
+        </div>
+
+    </fieldset>
+
+    {% if proposal %}
+
+        {% if proposal.get_items %}
+            <fieldset>
+                <legend>Items</legend>
+
+                <table class="table table-bordered table-responsive table-proposal-detail">
+                    <thead>
+                    <tr>
+                        <th>item</th>
+                        <th>cantidad</th>
+                        <th>costo unitario</th>
+                        <th>descuento</th>
+                        <th>total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in proposal.get_items %}
+                        <tr>
+                            <td> {{ item.oferta.name }}</td>
+                            <td> {{ item.quantity }}</td>
+                            <td> {{ item.unit_cost }}</td>
+                            <td> {{ item.discount }}</td>
+                            <td> 0.00</td>
+                        </tr>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+
+
+            </fieldset>
+
+            <fieldset>
+                <legend>Total</legend>
+
+                <div class="clearfix text-right">
+
+
+                    <div class="col-sm-2 col-sm-push-8 no-print">
+                        <h4>Taxes</h4>
+
+                        <p>{{ proposal.get_taxes|floatformat:"2" }}</p>
+                    </div>
+
+                    <div class="col-xs-4 print">
+                        <h4>Taxes</h4>
+
+                        <p>{{ proposal.get_taxes |floatformat:"2" }}</p>
+                    </div>
+
+                    <div class="col-sm-2 col-sm-push-7 no-print">
+                        <h4>Subtotal</h4>
+
+                        <p>{{ proposal.get_subtotal|floatformat:"2" }}</p>
+                    </div>
+                    <div class="col-xs-4 print">
+                        <h4>Subtotal</h4>
+
+                        <p>{{ proposal.get_subtotal |floatformat:"2" }}</p>
+                    </div>
+                    <strong>
+                        <div class="col-sm-2 col-sm-push-6 no-print">
+                            <h4>Total</h4>
+
+                            <p>{{ proposal.get_total |floatformat:"2" }}</p>
+                        </div>
+                        <div class="col-sm-4 print">
+                            <h4>Total</h4>
+
+                            <p>{{ proposal.get_total |floatformat:"2" }}</p>
+                        </div>
+                    </strong>
+                </div>
+            </fieldset>
+        {% else %}
+            <p>El evento no contiene items.</p>
+        {% endif %}
+    {% endif %}
+
+
+
+    {% if invoice %}
+        {% if invoice.proposal.get_items %}
+            <fieldset>
+                <legend>Items</legend>
+
+                <table class="table table-bordered table-responsive table-proposal-detail">
+                    <thead>
+                    <tr>
+                        <th>item</th>
+                        <th>cantidad</th>
+                        <th>costo unitario</th>
+                        <th>descuento</th>
+                        <th>total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in invoice.proposal.get_items %}
+                        <tr>
+                            <td> {{ item.oferta.name }}</td>
+                            <td> {{ item.quantity }}</td>
+                            <td> {{ item.unit_cost }}</td>
+                            <td> {{ item.discount }}</td>
+                            <td> 0.00</td>
+                        </tr>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+
+
+            </fieldset>
+
+            <fieldset>
+                <legend>Total</legend>
+
+                <div class="clearfix text-right">
+
+
+                    <div class="col-sm-2 col-sm-push-8 no-print">
+                        <h4>Taxes</h4>
+
+                        <p>{{ invoice.proposal.get_taxes |floatformat:"2" }}</p>
+                    </div>
+
+                    <div class="col-xs-4 print">
+                        <h4>Taxes</h4>
+
+                        <p>{{ invoice.proposal.get_taxes|floatformat:"2" }}</p>
+                    </div>
+
+                    <div class="col-sm-2 col-sm-push-7 no-print">
+                        <h4>Subtotal</h4>
+
+                        <p>{{ invoice.proposal.get_subtotal |floatformat:"2" }}</p>
+                    </div>
+                    <div class="col-xs-4 print">
+                        <h4>Subtotal</h4>
+
+                        <p>{{ invoice.proposal.get_subtotal |floatformat:"2" }}</p>
+                    </div>
+                    <strong>
+                        <div class="col-sm-2 col-sm-push-6 no-print">
+                            <h4>Total</h4>
+
+                            <p>{{ invoice.proposal.get_total |floatformat:"2" }}</p>
+                        </div>
+                        <div class="col-sm-4 print">
+                            <h4>Total</h4>
+
+                            <p>{{ invoice.proposal.get_total |floatformat:"2" }}</p>
+                        </div>
+                    </strong>
+                </div>
+            </fieldset>
+        {% else %}
+            <p>El evento no contiene items.</p>
+        {% endif %}
+    {% endif %}
+
+
+</div>

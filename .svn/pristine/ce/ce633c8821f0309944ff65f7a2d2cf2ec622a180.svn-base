@@ -1,0 +1,12 @@
+from django.conf import settings
+
+
+def subscription_status(request):
+
+    user = request.user
+    groups = user.groups.all()
+
+    PENDING = groups.count() and groups.first().name == settings.BUSINESS_TRIAL
+    ACTIVE = groups.count() and groups.first().name == settings.BUSINESS_MEMBER
+    EXPIRED = groups.count() and groups.first().name == settings.BUSINESS_BASIC
+    return {'PENDING':PENDING,'ACTIVE':ACTIVE, 'EXPIRED':EXPIRED}

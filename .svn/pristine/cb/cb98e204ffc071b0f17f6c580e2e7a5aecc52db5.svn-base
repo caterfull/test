@@ -1,0 +1,3 @@
+{{ proposal.event.name }}
+Te cuadra el business? <a href="{{ domain }}{% url 'accept_proposal' pidb64 token %}">Si</a>
+o <a href="{{ domain }}{% url 'deny_proposal' pidb64 token %}">No</a>?

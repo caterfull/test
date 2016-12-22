@@ -1,0 +1,26 @@
+ALTA PRIORIDAD
+formularios en los que meti los cascos
+
+acciones sobre invoice y/o proposal
+proposal:
+	editar->{edicion, denegado}
+	enviar->{edicion, denegado}
+	acceptar->{pendiente, denegado}
+	denegar->{pendinte}
+agrega las acciones de acpetar y denegar
+
+invoice:
+	editar->{edicion}
+	enviar->{creado, edicion}
+
+MEDIA PRIORIDAD
+opcion hide/show tax en el listado de items del proposal/factura. Esto solo tiene efecto a la hora de generar y/o enviar el pdf.
+generar link de descarga cuando exporta.
+
+MENOR PRIORIDAD
+
+probar enviar pdf por correo
+	
+BUSCAR ICONOS PARA ACEPTAR Y DENEGAR
+Programar comportamientyo de los botones en JS en proposal e invoice detalles.html
+

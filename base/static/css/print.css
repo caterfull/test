@@ -1,0 +1,18 @@
+.print{
+    visibility: visible;
+    display: block;
+}
+
+.no-print{
+    visibility: collapse;
+
+}
+.print-area{
+    width: 100%;
+}
+
+.main-sidebar{visibility: collapse}
+
+.logo-print{
+    height: 30px;
+}

@@ -1,0 +1,106 @@
+from django.db import models
+
+#Managers
+
+class EventManager(models.Manager):
+    ERROR = -1
+    ERRORS = [ERROR]
+    def get_event_by(self, id):
+        return self.get(pk=id)
+
+    def create_or_update_event(self, data, instance=None ):
+        name = data.get('name')
+        address = data.get('address')
+        event_date = data.get('event_date')
+        due_date = data.get('due_date')
+        customer = data.get('customer')
+        try:
+            if instance:
+                instance.name = name
+                instance.address = address
+                instance.event_date = event_date
+                instance.due_date = due_date
+                instance.customer = customer
+
+                instance.save()
+
+                return instance
+            else:
+                event = self.create(name=name, address=address, event_date = event_date, due_date=due_date, customer=customer)
+                return event
+        except Exception as e:
+            print(e)
+            return self.ERROR
+#Models
+from base.models import Customer, Oferta, Order
+
+
+class Event(models.Model):
+    objects = EventManager()
+    name = models.CharField(max_length=25)
+    address = models.CharField(max_length=150)
+    event_date = models.DateTimeField()
+    due_date = models.DateField()
+    customer = models.ForeignKey(Customer)
+
+    def __str__(self):
+        return self.name
+
+class Request(models.Model):
+    event = models.ForeignKey(Event)
+    oferta = models.ForeignKey(Oferta)
+    quantity = models.IntegerField()
+
+class Proposal(models.Model):
+
+    event = models.ForeignKey(Event)
+    status = models.ForeignKey('N_Proposal_Status')
+    client_message = models.TextField(max_length=150)
+    number = models.IntegerField(unique=True, auto_created=True)
+
+class Item(models.Model):
+
+    proposal = models.ForeignKey(Proposal)
+    oferta = models.ForeignKey(Oferta)
+    unit_cost = models.DecimalField(max_digits=9, decimal_places=3)
+    discount = models.DecimalField(max_digits=4, decimal_places=2)
+    descrption = models.TextField(max_length=150)
+
+class Invoice(models.Model):
+
+    proposal = models.ForeignKey(Proposal)
+    status = models.ForeignKey('N_Invoice_Status')
+    order = models.ForeignKey(Order, null=True)
+    number = models.IntegerField(unique=True, auto_created=True)
+
+
+
+#Nomenclators
+
+class N_Proposal_Status(models.Model):
+    EDITTING = 1
+    PENDING = 2
+    ACCEPTED = 3
+    DENIED = 4
+    CANCELLED = 5
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'
+
+class N_Invoice_Status(models.Model):
+    CREATED = 1
+    EDITTING = 2
+    PENDING = 3
+    PAID = 4
+    CANCELLED = 5
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'

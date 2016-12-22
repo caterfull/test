@@ -1,0 +1,20 @@
+<table>
+    <thead>
+        <th>Nombre</th>
+        <th>Cliente</th>
+        <th>Fecha</th>
+        <th>Fecha de pago</th>
+        <th>Estado</th>
+    </thead>
+    <tbody>
+        {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.proposal.event.name }}</td>
+                <td>{{ inv.proposal.event.customer }}</td>
+                <td>{{ inv.proposal.event.event_date }}</td>
+                <td>{{ inv.proposal.event.due_date }}</td>
+                <td>{{ inv.status }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

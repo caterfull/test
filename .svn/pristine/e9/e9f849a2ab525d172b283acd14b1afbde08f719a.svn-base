@@ -1,0 +1,4 @@
+{% include 'base/invoice/includes/event.html' with event=proposal.event %}
+<button>Editar</button>
+<button>PDF</button>
+<button>Enviar</button>

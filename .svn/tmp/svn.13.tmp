@@ -1,0 +1,161 @@
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+
+<form method="post" action="" name="eventForm" id="eventForm" class="form-horizontal" novalidate="novalidate">
+    {% csrf_token %}
+
+    <div class="form-group {% if form.name.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Nombre</label>
+
+        <div class="col-xs-12 col-sm-4">
+            <div class="clearfix">
+                {% render_field form.name class="form-control" %}
+            </div>
+            {% for error in  form.name.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    <div class="form-group {% if form.address.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Dirección</label>
+
+        <div class="col-xs-12 col-sm-6">
+            <div class="clearfix">
+                {% render_field form.address class="form-control" %}
+            </div>
+            {% for error in  form.address.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-group {% if form.event_date.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Dia</label>
+
+        <div class="col-xs-12 col-sm-2">
+            <div class="input-group ">
+                {% render_field form.event_date class="form-control date-picker" %}
+             <span class="input-group-btn">
+                        <button class="btn btn-flat btn-default" type="button">
+                            <i class="ace-icon fa fa-calendar "></i>
+                        </button>
+                    </span>
+            </div>
+
+            {% for error in  form.event_date.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+    <div class="form-group {% if form.due_date.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Dia de pago</label>
+
+        <div class="col-xs-12 col-sm-2">
+            <div class="input-group">
+                {% render_field form.due_date class="form-control date-picker" %}
+                  <span class="input-group-btn">
+                        <button class="btn btn-flat btn-default"
+                                type="button">
+                            <i class="ace-icon fa fa-calendar "></i>
+
+                        </button>
+                    </span>
+            </div>
+            {% for error in  form.due_date.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="hr hr-dotted"></div>
+    <div class="form-group {% if form.customer.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Cliente</label>
+
+        <div class="col-xs-11 col-sm-2" id="selectContainer">
+            <div class="clearfix">
+                {% render_field form.customer class="form-control chosen-select" %}
+            </div>
+            {% for error in  form.customer.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+        <button id="add_client" class="btn btn-success btn-flat add" style="margin-left: -15px"
+                data-toggle="modal"
+                data-target="#newCustomerModal"
+                data-modal-title="Nuevo contacto" type="button"><i class="fa fa-plus"></i></button>
+    </div>
+
+    <div class="form-group {% if form.comment.errors %} has-error {% endif %}">
+        <label class="control-label col-xs-12 col-sm-3 no-padding-right">Comentario</label>
+
+        <div class="col-xs-12 col-sm-4">
+            <div class="clearfix">
+                {% render_field form.comment class="form-control" %}
+            </div>
+            {% for error in  form.comment.errors %}
+                <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+</form>
+<script>
+
+    $(document).ready(function () {
+//datepicker plugin
+        //link
+        $('.date-picker').datepicker({
+            autoclose: true,
+            todayHighlight: true,
+            startDate: "dateToday",
+{#            format: "dd/mm/yyyy",#}
+            language:"es"
+        })
+            //show datepicker when clicking on the icon
+                .next().on('click', function () {
+                    $(this).prev().focus();
+                });
+{#        $("#id_event_date").change(function () {#}
+{#            $("#id_due_date").datepicker({#}
+{#                startDate: $("#id_event_date").val()#}
+{#            })#}
+{#        })#}
+
+
+        /*Select*/
+        $('.chosen-select').chosen({allow_single_deselect: true});
+        //resize the chosen on window resize
+
+        $(window)
+                .off('resize.chosen')
+                .on('resize.chosen',function () {
+                    $('.chosen-select').each(function () {
+                        var $this = $(this);
+                        $this.next().css({'width': $this.parent().width()});
+                    })
+                }).trigger('resize.chosen');
+
+
+        $.CustomDatatableFormObject.model_name = "customers";
+
+        $.CustomDatatableFormObject.modal_dialog_id = "#newCustomerModal";
+        $.CustomDatatableFormObject.form_id = "#newCustomerForm";
+        $.CustomDatatableFormObject.has_fn_callback = true;
+        $.CustomDatatableFormObject.fn_callback = function () {
+            var url = '/customers/list';
+
+            $.get(url, {id: this.model_id}, function (data) {
+                $('#selectContainer').empty().append(data);
+            });
+
+        };
+
+    });
+</script>
+{% include 'base/includes/modalFormCusomer.html' %}
+

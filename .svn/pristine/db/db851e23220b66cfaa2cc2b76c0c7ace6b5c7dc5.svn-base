@@ -1,0 +1,105 @@
+<div class="proposal-details">
+    <fieldset>
+        <legend>Datos del evento</legend>
+        <h3>{{ event.name | capfirst }}</h3>
+        <div class="no-print">
+
+            <p class="col-xs-12 col-sm-3 no-padding-left"><i class="fa fa-map-marker"></i> {{ event.address }}</p>
+
+            <p class="col-xs-12 col-sm-3"><i class="fa fa-calendar"></i> {{ event.event_date }}</p>
+
+            <p class="col-xs-12 col-sm-3"><i class="fa fa-dollar"></i> {{ event.event_date }}</p>
+
+            {% if proposal.client_message %}
+                <p class="col-xs-12 no-padding"><i class="fa fa-comment"></i> {{ proposal.client_message }}</p>
+
+            {% endif %}
+        </div>
+        <div class="print">
+
+            <p class="col-xs-12 no-padding-left"><i class="fa fa-map-marker"></i> {{ event.address }}</p>
+
+            <p class="col-xs-6 no-padding-left"><i class="fa fa-calendar"></i> {{ event.event_date }}</p>
+
+            <p class="col-xs-6 no-padding-right"><i class="fa fa-dollar"></i> {{ event.event_date }}</p>
+
+            {% if proposal.client_message %}
+                <p class="col-xs-12 no-padding"><i class="fa fa-comment"></i> {{ proposal.client_message }}</p>
+
+            {% endif %}
+        </div>
+
+    </fieldset>
+    <fieldset>
+        <legend>Items</legend>
+        
+        {% for foo in pro %}
+        
+        {% endfor %}
+        
+    </fieldset>
+
+    <fieldset>
+        <legend>Total</legend>
+
+        <div class="clearfix text-right">
+
+
+            <div class="col-sm-2 col-sm-push-8 no-print">
+                <h4>Taxes</h4>
+                <p>25.00</p>
+            </div>
+
+            <div class="col-xs-4 print">
+                <h4>Taxes</h4>
+                <p>25.00</p>
+            </div>
+
+            <div class="col-sm-2 col-sm-push-7 no-print">
+                <h4>Subtotal</h4>
+
+                <p>25.00</p>
+            </div>
+             <div class="col-xs-4 print">
+                <h4>Subtotal</h4>
+
+                <p>25.00</p>
+            </div>
+            <strong>
+                <div class="col-sm-2 col-sm-push-6 no-print">
+                    <h4>Total</h4>
+
+                    <p>25.00</p>
+                </div>
+                <div class="col-sm-4 print">
+                    <h4>Total</h4>
+
+                    <p>25.00</p>
+                </div>
+            </strong>
+        </div>
+    </fieldset>
+
+
+</div>
+
+
+{##}
+{#<div class="container">#}
+{##}
+{#    <legend>Datos del evento</legend>#}
+{##}
+{#    <h3>{{ event.name }}</h3>#}
+{#    <div>#}
+{#        Nombre del evento: {{ event.name }}#}
+{#    </div>#}
+{#    <div>Direccion del evento: {{ event.address }}</div>#}
+{#    <div>Fecha del Evento: {{ event.event_date }}</div>#}
+{#    <div>Fecha Limite para el pago: {{ event.due_date }}</div>#}
+{#    {% if proposal.client_message %}#}
+{#        <div>Comentario: {{ proposal.client_message }}</div>#}
+{#    {% endif %}#}
+{##}
+{#    </fieldset>#}
+{##}
+{#</div>#}

@@ -1,0 +1,44 @@
+{% load staticfiles %}
+
+<div class="clearfix ">
+    <div class="pull-left">
+        {% if proposal.status.name == 'PENDIENTE' or proposal.status.name == 'DENEGADO' %}
+            <a href="{% url 'accept_proposal_sys' proposal.id %}" class="btn btn-success no-print  "> <i
+                    class="fa fa-suitcase"></i> <span class="hidden-xs"> Aceptar</span></a>
+        {% endif %}
+        {% if proposal.status.name == 'PENDIENTE' %}
+            <a href="{% url 'deny_proposal_sys' proposal.id %}" class="btn btn-danger  no-print  "> <i
+                    class="fa fa-suitcase"></i> <span class="hidden-xs"> Denegar</span></a>
+        {% endif %}
+    </div>
+    <div class="pull-right clearfix">
+
+        <a href="#" class="btn btn-github btn-print  "> <i class="fa fa-print"></i> <span
+                class="hidden-xs"> Imprimir</span></a>
+        <button class="btn btn-pdf btn-github">
+            <i class="  fa fa-file-text"></i>
+            Exportar a PDF
+        </button>
+        {% if proposal.may_send_email %}
+            {% csrf_token %}
+
+            <button id="send_proposal" class="btn btn-send btn-github "
+                    data-url="{% url 'proposal_send' proposal.id %}">
+                <i class="  fa fa-envelope"></i>
+                Enviar
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+{% include 'base/invoice/includes/event.html' with event=proposal.event %}
+
+
+<script src="{% static 'base/js/jquery.js' %}"></script>
+<script src="{% static 'base/js/invoice/N.js' %}"></script>
+<script>
+    $(".btn-print").click(function () {
+        return window.print();
+    });
+</script>
+

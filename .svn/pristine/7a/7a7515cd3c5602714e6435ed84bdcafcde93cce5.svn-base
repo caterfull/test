@@ -1,0 +1,9 @@
+crear los permisos para cada vista y asignarlos a los grupos. Esto es jamon pero lleva una o dos horas/nalgas. 
+validar en la vista de pago y en su template con js que el pago seea menor o igual que lo que debe.
+opcion hide/show tax en el listado de items del proposal/factura. Esto solo tiene efecto a la hora de generar y/o enviar el pdf.
+verificar que los handlers de las signals se ejecuten (con cellery se puede hacer) o task a palo
+Configurar los log
+
+
+y bueno que todo lo del pago en stripe salga bien. Le voy a prender una (b|v)ela a Alan Turin.
+

@@ -1,0 +1,159 @@
+from smtplib import SMTPException
+from threading import Thread
+
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail.message import EmailMultiAlternatives
+from django.db import transaction
+from django.template import loader
+from django.template.context import Context
+from django.template.loader import get_template
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+# from reportlab.graphics.shapes import *
+#from xhtml2pdf import pisa
+from base.model_invoice import Invoice
+from stripe_cater.services import create_payment
+
+__author__ = 'amado'
+
+def task_sendmail_confirm_registration(order):
+
+    subject = "Confirmacion de correo"
+    from_email = settings.ADMIN_EMAIL
+    to = order.user.email
+    template = loader.get_template("base/email/registration_confirm.html")
+    domain = settings.CATERFULL_BASE_URL
+    token = default_token_generator.make_token(order.user)
+    context = Context({'user':order.user,'domain':domain,'key':order.key,'token':token})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    try:
+        msg.send(fail_silently=False)
+
+        order.pending = False
+        order.save()
+    except SMTPException as e:
+        print(e)
+
+def start_thread(function, *args):
+    def inner_function():
+        function(*args)
+    thread = Thread(target=inner_function)
+    thread.start()
+
+OK = 0
+ERROR = 1
+
+def task_send_proposal(proposal):
+    urlsafe_token = proposal.generate_token()
+
+    subject = "Presupuesto"
+    from_email = settings.ADMIN_EMAIL
+    to = proposal.event.customer.email
+    template = loader.get_template("base/email/proposal.html")
+    domain = settings.CATERFULL_BASE_URL
+
+    context = Context({'token':urlsafe_token,'domain':domain, 'proposal':proposal, 'pidb64':urlsafe_base64_encode(force_bytes(proposal.id))})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    #proposal_pdf = generate_proposal_pdf(proposal=proposal)
+    #msg.attach_file(proposal_pdf.name, 'application/pdf')
+    try:
+
+        msg.send(fail_silently=False)
+        proposal.has_been_sent()
+        return OK
+    except SMTPException as e:
+       proposal.reset_token()
+       return ERROR
+
+
+def task_send_invoice(invoice):
+    urlsafe_token = invoice.generate_token()
+
+    subject = "Presupuesto"
+    from_email = settings.ADMIN_EMAIL
+    to = invoice.proposal.event.customer.email
+    template = loader.get_template("base/email/invoice.html")
+    domain = settings.CATERFULL_BASE_URL
+
+    context = Context({'token':urlsafe_token,'domain':domain, 'invoice':invoice, 'iidb64':urlsafe_base64_encode(force_bytes(invoice.id))})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    #invoice_pdf = generate_invoice_pdf(invoice=invoice)
+
+    #msg.attach_file(invoice_pdf.name,'application/pdf')
+    response = OK
+    try:
+        with transaction.atomic():
+            payment = create_payment(invoice.proposal.get_total())
+            invoice.set_payment(payment=payment)
+            msg.send(fail_silently=False)
+            invoice.has_been_sent()
+
+    except SMTPException as e:
+       print(e)
+       invoice.reset_token()
+       response =  ERROR
+    except Exception as e:
+       invoice.reset_token()
+       response =  ERROR
+       print(e)
+    return response
+
+# def generate_pdf():
+#     from reportlab.lib import colors
+#
+#
+#     d = Drawing(400, 200)
+#     d.add(Rect(50, 50, 300, 100, fillColor=colors.yellow))
+#     d.add(String(150,100, 'Hello World', fontSize=18, fillColor=colors.red))
+#     d.add(String(180,86, 'Special characters',fillColor=colors.red))
+#     from reportlab.graphics import renderPDF
+#     renderPDF.drawToFile(d, 'example1.pdf', 'My First Drawing')
+
+#
+#
+#def test_pdf():
+#    data = ['Paco','Perico','Chuncha','Maria la loca', 'la vieja chismosa']
+#    tmplate = get_template('pdf.html')
+#    html = tmplate.render(Context({'nombres':data}))
+#    file = open('test.pdf','w+b')
+#    pisaStatus = pisa.CreatePDF(html.encode('utf-8'), dest=file, encoding='utf-8')
+#
+#    file.seek(0)
+#    pdf = file.read()
+#    file.close()
+#
+#    print(pdf)
+#
+#def generate_invoice_pdf(invoice=None):
+#
+#    tmplate = get_template('base/invoice/invoice_detalles_print_view.html')
+#    html = tmplate.render(Context({'invoice':invoice}))
+#    BASE = settings.MEDIA_ROOT + '/pdf/invoice/email/'
+#    file = open(BASE + 'invoice'+str(invoice.number)+'.pdf','w+b')
+#    pisaStatus = pisa.CreatePDF(html.encode('utf-8'), dest=file, encoding='utf-8')
+#
+#    file.seek(0)
+#    pdf = file.read()
+#    file.close()
+#
+#    print(pdf)
+#    return file
+#
+#def generate_proposal_pdf(proposal=None):
+#
+#    tmplate = get_template('base/invoice/proposal/proposal_detalles_print_view.html')
+#    html = tmplate.render(Context({'proposal':proposal}))
+#    BASE = settings.MEDIA_ROOT + '/pdf/proposal/email/'
+#    file = open(BASE + 'proposal'+str(proposal.number)+'.pdf','w+b')
+#    pisaStatus = pisa.CreatePDF(html.encode('utf-8'), dest=file, encoding='utf-8')
+#
+#    file.seek(0)
+#    pdf = file.read()
+#    file.close()
+#
+#    print(pdf)
+#    return file

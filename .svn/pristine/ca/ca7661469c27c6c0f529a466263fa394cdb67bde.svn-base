@@ -1,0 +1,22 @@
+from datetime import datetime, timedelta
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from base.models import N_SubscriptionStatus, Subscription, N_NotificationType, Notification
+
+
+class Command(BaseCommand):
+    def handle(self, *args, **options):
+        st = N_SubscriptionStatus.objects.filter(pk=N_SubscriptionStatus.PENDIND).first()
+        start_day = datetime.today().date()
+        end_day = start_day + timedelta(days=settings.DAYS_TO_NOTIFY_EXPIRE_DATE)
+        subs_list = Subscription.objects.filter(status=st).filter(expire_date__gt=start_day).filter(expire_date__lte=end_day)
+
+        nt = N_NotificationType.objects.filter(pk=N_NotificationType.EXPIRE_DATE_ALERT).first()
+
+
+        for sub in subs_list:
+            user = sub.business.owner
+            diff = sub.expire_date - start_day
+            Notification.objects.create_notification(user,nt,title_arg=[], body_arg=[diff.days])
+
+

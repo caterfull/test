@@ -1,0 +1,1 @@
+Acceda a este link para pagar <a href="{{ domain }}{% url 'stripe_invoice_charge' iidb64 token %}">Pay now</a>

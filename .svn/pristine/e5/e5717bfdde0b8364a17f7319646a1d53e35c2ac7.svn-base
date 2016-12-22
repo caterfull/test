@@ -1,0 +1,12 @@
+{% load staticfiles %}
+<div class="print">
+<div>
+   <img src="{% static 'images/logo-large.png' %}" alt="" class="logo-print"/>
+    <h2>{% block print_title %} {% endblock %}  <small>{% block print_subtitle %} {% endblock %}</small> </h2>
+</div>
+
+
+<div>
+    {% block print_content %} {% endblock %}
+</div>
+</div>

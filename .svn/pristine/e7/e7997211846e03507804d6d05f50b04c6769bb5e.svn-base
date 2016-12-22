@@ -1,0 +1,66 @@
+{% load widget_tweaks %}
+<form method="post">
+    {% csrf_token %}
+    <div>
+        Nombre: {% render_field form.name %}
+        <div>
+            {{ form.name.errors }}
+        </div>
+    </div>
+    <div>
+        Nombre del Propietario: {% render_field form.first_name %}
+         <div>
+            {{ form.first_name.errors }}
+        </div>
+    </div>
+    <div>
+        Apellidos: {% render_field form.last_name %}
+         <div>
+            {{ form.last_name.errors }}
+        </div>
+    </div>
+    <div>
+        Email: {% render_field form.email %}
+         <div>
+            {{ form.email.errors }}
+        </div>
+    </div>
+
+    <div>
+        Telefono: {% render_field form.phone %}
+         <div>
+            {{ form.phone.errors }}
+        </div>
+    </div>
+    <div>
+        Direccion: {% render_field form.address %}
+         <div>
+            {{ form.address.errors }}
+        </div>
+    </div>
+    <div>
+        Tax: {% render_field form.tax %}
+         <div>
+            {{ form.tax.errors }}
+        </div>
+    </div>
+    <div>
+        {% for error, msg in errors.items %}
+            <p>{{ error}}: {{ msg }}</p>
+        {%  endfor %}
+    </div>
+    <input type="submit" value="Save"/>
+</form>
+
+{% if PENDING %}
+    Se te acaba el tiempo
+{% elif EXPIRED %}
+    Toma chocolate...Hasta cuando son los quince de Yaquelin
+{% endif %}
+
+{% if  need_payment %}
+    <form method="POST" action="{% url 'payment_subs' %}">
+        {% csrf_token %}
+        <input type="submit" value="Yo si puedo">
+    </form>
+{% endif %}

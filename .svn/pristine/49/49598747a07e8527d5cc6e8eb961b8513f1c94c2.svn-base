@@ -1,0 +1,82 @@
+from smtplib import SMTPException
+from threading import Thread
+
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail.message import EmailMultiAlternatives
+from django.core.urlresolvers import reverse
+from django.template import loader
+from django.template.context import Context
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
+__author__ = 'amado'
+
+def task_sendmail_confirm_registration(order):
+
+    subject = "Confirmacion de correo"
+    from_email = settings.ADMIN_EMAIL
+    to = order.user.email
+    template = loader.get_template("base/email/registration_confirm.html")
+    domain = settings.CATERFULL_BASE_URL
+    token = default_token_generator.make_token(order.user)
+    context = Context({'user':order.user,'domain':domain,'key':order.key,'token':token})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    try:
+        msg.send(fail_silently=False)
+
+        order.pending = False
+        order.save()
+    except SMTPException as e:
+        print(e)
+
+def start_thread(function, *args):
+    def inner_function():
+        function(*args)
+    thread = Thread(target=inner_function)
+    thread.start()
+
+OK = 0
+ERROR = 1
+
+def task_send_proposal(proposal):
+    urlsafe_token = proposal.generate_token()
+
+    subject = "Presupuesto"
+    from_email = settings.ADMIN_EMAIL
+    to = proposal.event.customer.email
+    template = loader.get_template("base/email/proposal.html")
+    domain = settings.CATERFULL_BASE_URL
+
+    context = Context({'token':urlsafe_token,'domain':domain, 'proposal':proposal, 'pidb64':urlsafe_base64_encode(force_bytes(proposal.id))})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    try:
+        msg.send(fail_silently=False)
+        proposal.has_been_sent()
+        return OK
+    except SMTPException as e:
+       proposal.reset_token()
+       return ERROR
+
+
+def task_send_invoice(invoice):
+    urlsafe_token = invoice.generate_token()
+
+    subject = "Presupuesto"
+    from_email = settings.ADMIN_EMAIL
+    to = invoice.proposal.event.customer.email
+    template = loader.get_template("base/email/invoice.html")
+    domain = settings.CATERFULL_BASE_URL
+
+    context = Context({'token':urlsafe_token,'domain':domain, 'invoice':invoice, 'iidb64':urlsafe_base64_encode(force_bytes(invoice.id))})
+    text_content = template.render(context)
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+    try:
+        msg.send(fail_silently=False)
+        invoice.has_been_sent()
+        return OK
+    except SMTPException as e:
+       invoice.reset_token()
+       return ERROR

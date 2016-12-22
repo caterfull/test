@@ -1,0 +1,16 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Website - Congratulations {% endblock %}
+{% block main_content %}
+    <div class="text-center well-xg well ">
+        <h1>Congratulations!!!</h1>
+        <h4>Se ha creado su sitio web </h4>
+
+        <p>Puede acceder a él desde <a href="http://{{ domain_name }}" target="_blank">aquí</a></p>
+    </div>
+
+{% endblock %}

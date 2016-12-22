@@ -1,0 +1,104 @@
+from datetime import datetime
+from django import forms
+from django.conf import settings
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
+from django.forms.forms import Form
+from django.forms.models import ModelForm, ModelChoiceField
+from django.forms.widgets import Textarea, RadioSelect, PasswordInput
+from widget_tweaks.tests import MyForm
+from base.models import Customer, Business, SubscriptionType
+
+# widgets
+class SubscriptionModelChoiceField(ModelChoiceField):
+
+    def label_from_instance(self, obj):
+        return obj.description
+
+# forms
+
+class CustomerForm(ModelForm):
+
+    first_name = forms.CharField(max_length=50)
+    last_name = forms.CharField(max_length=50)
+    email = forms.EmailField()
+    comments = forms.CharField(max_length=250, widget=Textarea, required=False)
+    company = forms.CharField(max_length=50, required=False)
+
+    class Meta:
+        model = Customer
+        fields = ['suffix','prefix']
+
+class BusinessForm(Form):
+
+    phone = forms.CharField(max_length=20, error_messages={'required':'Campo Requerido'},widget=forms.TextInput(attrs={'placeholder':"Phone"}))
+    name = forms.CharField(max_length=250,widget=forms.TextInput(attrs={'placeholder':"Business name"}))
+    first_name = forms.CharField(max_length=25,widget=forms.TextInput(attrs={'placeholder':"First name"}))
+    last_name = forms.CharField(max_length=25,widget=forms.TextInput(attrs={'placeholder':"Last name"}))
+    password = forms.CharField(widget=PasswordInput(attrs={'placeholder':"Password"}), max_length=25)
+    password_confirm = forms.CharField(widget=PasswordInput(attrs={'placeholder':"Password confirm"}), max_length=25)
+    email = forms.EmailField(widget=forms.TextInput(attrs={'placeholder':"Email"}))
+    address = forms.CharField(max_length=250,widget=forms.TextInput(attrs={'placeholder':"Address"}))
+    #subscriptions = SubscriptionModelChoiceField(queryset=SubscriptionType.objects.all(), widget=RadioSelect, empty_label=None, to_field_name="id")
+    tax = forms.DecimalField(max_digits=5, decimal_places=3, min_value=0,widget=forms.NumberInput(attrs={'placeholder':"Tax"}))
+
+    def clean_password_confirm(self):
+            if self.data['password'] != '' and self.data['password'] != self.data['password_confirm']:
+                raise forms.ValidationError('La contraseña y su confirmación no coinciden.')
+            return self.data['password_confirm']
+
+class BusinessProfileForm(Form):
+
+    phone = forms.CharField(max_length=20, error_messages={'required':'Campo Requerido'})
+    name = forms.CharField(max_length=250)
+    first_name = forms.CharField(max_length=25)
+    last_name = forms.CharField(max_length=25)
+    email = forms.EmailField()
+    address = forms.CharField(max_length=250)
+    tax = forms.DecimalField(max_digits=5, decimal_places=3, min_value=0)
+
+class CaterAuthenticationForm(AuthenticationForm):
+
+    def confirm_login_allowed(self, user):
+
+        AuthenticationForm.confirm_login_allowed(self, user)
+
+        subs_disable_message = "Su suscripcion vigente no esta activada o ha expirado."
+
+        groups = user.groups.all()
+        if(len(groups)) and groups.first().name in settings.BUSINESS_GROUPS:
+            b = Business.objects.filter(owner=user).first()
+            sub = b.subscription_set.filter(current=True).first()
+            if sub.expire_date < datetime.date(datetime.today()) or not sub.is_active():
+
+                raise forms.ValidationError(
+                subs_disable_message,
+                code='invalid_subscription',
+                # params={'username': self.username_field.verbose_name},
+            )
+
+    # def clean(self):
+    #
+    #     subs_disable_message = "Su suscripcion vigente no esta activada o ha expirado."
+    #
+    #     cleaned_data = AuthenticationForm.clean(self)
+    #
+    #     if cleaned_data.get('username'):
+    #         user = User.objects.filter(email=cleaned_data.get('username')).first()
+    #
+    #         groups = user.groups.all()
+    #         if(len(groups)) and groups.first().name in settings.BUSINESS_GROUPS:
+    #             b = Business.objects.filter(owner=user).first()
+    #             sub = b.subscription_set.filter(current=True).first()
+    #             if sub.expire_date > datetime.date(datetime.today()) and sub.active:
+    #                 return cleaned_data
+    #             else:
+    #                 raise forms.ValidationError(
+    #                 subs_disable_message,
+    #                 code='invalid_subscription',
+    #                 # params={'username': self.username_field.verbose_name},
+    #             )
+    #         else:
+    #             return cleaned_data
+    #
+    #     return cleaned_data

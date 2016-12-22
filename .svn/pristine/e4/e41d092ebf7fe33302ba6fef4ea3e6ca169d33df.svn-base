@@ -1,0 +1,171 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Perfil {% endblock %}
+
+{% block content_header %}
+    <h1><i class="fa fa-user"></i> Perfil </h1>
+{% endblock %}
+
+{% block main_content %}
+
+
+
+    <form method="post" enctype="multipart/form-data" class="form-horizontal">
+        {% csrf_token %}
+
+
+        <h4> </h4>
+
+        <div class="form-group {% if form.first_name.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Nombre</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.first_name class="form-control" %}
+                </div>
+                {% for error in  form.first_name.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div class="form-group {% if form.last_name.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Apellidos</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.last_name class="form-control" %}
+                </div>
+                {% for error in  form.last_name.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+    <div class="form-group {% if form.name.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Nombre del negocio </label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.name class="form-control" %}
+                </div>
+                {% for error in  form.name.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+      <div class="form-group {% if form.address.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Dirección</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.address class="form-control" %}
+                </div>
+                {% for error in  form.address.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div class="form-group {% if form.email.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Correo electrónico</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.email class="form-control" %}
+                </div>
+                {% for error in  form.email.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="form-group {% if form.phone.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Teléfono</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.phone class="form-control" %}
+                </div>
+                {% for error in  form.phone.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="form-group {% if form.tax.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Tasa impositiva
+                (Tax)</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+                    {% render_field form.tax class="form-control" %}
+                </div>
+                {% for error in  form.tax.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div class="clearfix col-xs-12">
+            <label class="  col-xs-12 col-sm-4 no-padding-right text-right"></label>
+            <img src="{{ logo_url }}" class="user-profile ">
+        </div>
+        <div class="form-group {% if form.logo.errors %} has-error {% endif %}">
+            <label class="control-label col-xs-12 col-sm-3 no-padding-right text-right">Logo</label>
+
+            <div class="col-xs-12 col-sm-4">
+                <div class="clearfix">
+
+                    {% render_field form.logo class="form-control" %}
+                </div>
+                {% for error in  form.logo.errors %}
+                    <div class="text-validation-error"><i class="fa fa-warning"></i> {% trans error %} </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div>
+            {% for error, msg in errors.items %}
+                <p>{{ error }}: {{ msg }}</p>
+            {% endfor %}
+        </div>
+        <hr/>
+        <div class="col-xs-12 ">
+            <input type="submit" value="Aceptar" class="btn btn-success btn-flat "/>
+            <a href="{% url 'dashboard' %}" class="btn btn-success btn-flat ">Cancelar</a>
+
+        </div>
+
+
+        {#    #}
+        {#        <div>#}
+        {#            Logo: {% render_field form.logo %}#}
+        {#            <div>#}
+        {#                {{ form.logo.errors }}#}
+        {#            </div>#}
+        {#        </div>#}
+
+
+    </form>
+
+    {#    {% if PENDING %}#}
+    {#        Se te acaba el tiempo#}
+    {#    {% elif EXPIRED %}#}
+    {#        Toma chocolate...Hasta cuando son los quince de Yaquelin#}
+    {#    {% endif %}#}
+    <div class="clearfix"></div>
+{% endblock %}
+{#{% if  need_payment %}#}
+{#    <form method="POST" action="{% url 'payment_subs' %}">#}
+{#        {% csrf_token %}#}
+{#        <input type="submit" value="Yo si puedo">#}
+{#    </form>#}
+{#{% endif %}#}

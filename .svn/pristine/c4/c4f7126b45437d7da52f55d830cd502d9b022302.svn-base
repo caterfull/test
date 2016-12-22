@@ -1,0 +1,13 @@
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+from base.models import ConfirmEmailOrder
+
+
+class Command(BaseCommand):
+
+    def handle(self, *args, **options):
+        t = timezone.now()
+        list = ConfirmEmailOrder.objects.filter(expire_date__lt=t).filter(checked=False).filter(pending=False)
+        for order in list:
+            order.user.delete()
+

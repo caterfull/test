@@ -1,0 +1,509 @@
+from datetime import datetime, timedelta
+import django
+from django.conf import settings
+
+from django.contrib.auth.models import User, Group
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
+from django.db import models
+
+#Managers
+from django.db.utils import IntegrityError
+from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from stripe_cater.models import StripeCustomer, StripeAccount, StripeSubscripcion
+
+
+class CustomerManager(models.Manager):
+
+    ERROR = -1
+    EMAIL_ERROR = -2
+    ERRORS = [ERROR, EMAIL_ERROR]
+
+    def list_by_business(self, business):
+        return self.filter(business=business).filter(activo=True)
+
+    def get_one_by_business_and_id(self, business, id):
+        return self.filter(business=business).filter(id=id).filter(activo=True).first()
+
+    def delete_by_business(self, id, business):
+        customer = self.get_one_by_business_and_id(business, id)
+        customer.activo = False
+        customer.save()
+
+    def create_or_update_customer(self, data, business, customer=None):
+        prefix = data.get('prefix')
+        suffix = data.get('suffix')
+        email = data.get('email')
+        company = data.get('company')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        comments = data.get('comments')
+        company = N_Company.objects.get_by_name(company)
+        try:
+            if not customer:
+                customer = self.create(prefix=prefix, suffix=suffix, email=email, company=company, first_name=first_name, last_name=last_name, comments=comments, business = business)
+            else:
+               customer.first_name = first_name
+               customer.last_name = last_name
+               customer.suffix = suffix
+               customer.prefix = prefix
+               customer.email = email
+               customer.company = company
+               customer.comments = comments
+
+            customer.save()
+            return customer
+
+        except IntegrityError as e:
+            print("Integrity")
+            return self.EMAIL_ERROR
+        except:
+            print('Error')
+            return self.ERROR
+class CompanyManager(models.Manager):
+
+    def get_by_name(self, name):
+        cmp = self.filter(text=name).first()
+        if cmp:
+            return cmp
+        elif name:
+            cmp = self.create(text=name)
+            cmp.save()
+            return cmp
+class OrderManager(models.Manager):
+    def create_order(self, due_date, amount, type=type):
+        order = self.create(total_amount=amount, due_date=due_date, type=type)
+        order.save()
+        # Task_Order
+        return order
+
+class ConfirmEmailManager(models.Manager):
+     '''
+    Manager del model: CheckEmailOrder
+    '''
+
+     def create_confirm_register_email(self, user):
+
+         expire_date = datetime.date(datetime.today()) + timedelta(days=settings.DAYS_TO_CONFIRM_EMAIL)
+
+         key = urlsafe_base64_encode(force_bytes(user.pk))
+         order = self.create(user=user, key=key, expire_date=expire_date)
+
+         order.save()
+         return order
+
+
+class BusinessManager(models.Manager):
+    ERROR = -1
+    EMAIL_ERROR = -2
+    ERRORS = [ERROR, EMAIL_ERROR]
+
+    ERRORS = [ERROR, EMAIL_ERROR]
+
+    def get_business_by_user(self, user):
+    # its current subsciption has to be actived
+        bs = self.filter(owner=user).first()
+        return bs
+    def get_business_by_id(self, id):
+        return self.filter(id=id).first()
+
+    def create_business(self, data):
+        password = data.get('password')
+        email = data.get('email')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        # subscriptiontype = data.get('subscriptions')
+        name = data.get('name')
+        phone = data.get('phone')
+        address = data.get('address')
+        tax = data.get('tax')
+
+        # try:
+        user = self.create_user(email, first_name, last_name, password)
+        business = self.create(name=name, address=address, owner=user, tax=tax, phone=phone)
+        business.save()
+        # type = SubscriptionType.objects.get(pk=SubscriptionType.TRIAL)
+        # Subscription.objects.create_subscription(type, business)
+        return business
+        # except ValidationError:
+        #     return self.EMAIL_ERROR
+        # except Exception as e:
+        #     print(e)
+        #     return self.ERROR
+
+    def update_business_data(self, business, data, logo=None):
+
+        email = data.get('email')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+
+        name = data.get('name')
+        phone = data.get('phone')
+        address = data.get('address')
+        tax = data.get('tax')
+        print(logo)
+
+        try:
+            self.update_user(business.owner, email, first_name, last_name)
+            business.name = name
+            business.phone = phone
+            business.address = address
+            business.tax = tax
+            business.logo = logo
+            business.save()
+            return business
+        except ValidationError:
+            return self.EMAIL_ERROR
+        except Exception as e:
+            print(e)
+            return self.ERROR
+
+
+    def create_user(self, email,first_name, last_name,password):
+
+        self.check_user_integrity(email)
+
+        usename = urlsafe_base64_encode(force_bytes(datetime.today().timestamp()))
+        user = User.objects.create_user(username=usename, email=email, password=password)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.is_active = False
+        group = Group.objects.get_by_natural_key(name=settings.BUSINESS_TRIAL)
+        user.groups.add(group)
+        user.save()
+
+        return user
+
+    def update_user(self,user, email,first_name, last_name):
+        has_changed = False
+        if user.email != email:
+            self.check_user_integrity(email)
+            user.email = email
+            has_changed = True
+
+        if user.first_name != first_name:
+            user.first_name = first_name
+            has_changed = True
+
+        if user.last_name != last_name:
+            user.last_name = last_name
+            has_changed = True
+
+        if has_changed:
+            user.save()
+
+        return user
+
+    def check_user_integrity(self, email):
+        email_already_used = User.objects.filter(email=email).filter(is_active=True).first()
+        if email_already_used:
+            raise ValidationError({'email':[u'%s Ya existe como correo' % email]})
+
+    def get_by_token(self, token):
+        return self.filter(accout_creation_token=token).first()
+
+    def get_by_stripe_customer(self, stripe_customer):
+        return self.filter(stripecustomer=stripe_customer).first()
+
+class NotificationManager(models.Manager):
+
+    def create_notification(self, user, type, title_arg=None, body_arg=None):
+        title = type.title_format.format(*title_arg)
+        body = type.body_format.format(*body_arg)
+        self.create(user=user, type=type, title=title, body=body)
+
+class OfertaManager(models.Manager):
+
+    def get_oferta_by_name(self, name, business):
+        oferta = self.filter(business=business).filter(name=name).first()
+        if oferta:
+            return oferta
+        else:
+            oferta = self.create(business=business, name=name)
+            return oferta
+
+
+# Create your models here.
+class Business(models.Model):
+
+    MAP_GROUP_SUBS_STATUS = {StripeSubscripcion.CANCELED:settings.BUSINESS_BASIC,
+                             StripeSubscripcion.ACTIVE:settings.BUSINESS_MEMBER,
+                             StripeSubscripcion.TRIAL:settings.BUSINESS_TRIAL}
+
+    objects = BusinessManager()
+    phone = models.CharField(max_length=20)
+    name = models.CharField(max_length=250)
+    # email = models.EmailField()
+    address = models.CharField(max_length=250)
+    owner = models.ForeignKey(User)
+    stripecustomer = models.ForeignKey(StripeCustomer, null=True)
+    # subscriptions = models.ManyToManyField('SubscriptionType',through='Subscription')
+    tax = models.DecimalField(max_digits=5, decimal_places=3, default=0)
+    stripe_account = models.ForeignKey(StripeAccount, null=True)
+    accout_creation_token = models.CharField(max_length=50, null=True)
+    logo = models.FileField(null=True, upload_to=settings.PROFILE_DIR_NAME)
+
+    def get_logo_url(self):
+        if self.logo:
+            return self.logo.url[self.logo.url.find('/media/'+settings.PROFILE_DIR_NAME+'/'):]
+        return None
+
+    def has_an_account(self):
+        return self.stripe_account != None
+
+    # def need_payment_order(self):
+    #     subs = self.get_subscription()
+    #     return not subs.has_payment_order()
+
+    # def get_subscription(self):
+    #     subs = self.subscriptions.first()
+    #     return subs
+
+    def __str__(self):
+        return self.name
+
+    def regenerate_token(self):
+        token = str(urlsafe_base64_encode(force_bytes(self.id))) + '$' + str(urlsafe_base64_encode(force_bytes(int(datetime.today().timestamp()))))
+        self.accout_creation_token = token
+        self.save()
+        return self.accout_creation_token
+
+    def set_account(self, account):
+        self.stripe_account = account
+        self.save()
+
+    def set_stripe_customer(self, customer):
+        self.stripecustomer = customer
+        self.save()
+
+    def check_subscription_status(self):
+        subs_status = self.stripecustomer.current_status()
+        if subs_status != StripeSubscripcion.PAST_DUE: #Do nothing on past due
+            actual_group = Business.MAP_GROUP_SUBS_STATUS[subs_status]
+            current_group = self.current_group()
+            if current_group != actual_group:
+                self.owner.groups.filter()
+
+    def change_group(self, old_group_name, new_group_name):
+        self.owner.groups.filter(name=old_group_name).delete()
+        group = Group.objects.get_by_natural_key(name=new_group_name)
+        self.owner.groups.add(group)
+
+    def current_group(self):
+        return self.owner.groups.first()
+
+    def contact_email(self):
+        return self.owner.email
+
+class Oferta(models.Model):
+    objects = OfertaManager()
+    name = models.CharField(max_length=25)
+    business = models.ForeignKey(Business, related_name='ofertas')
+    price = models.DecimalField(max_digits=9, decimal_places=3, default=0) #precio por unidades
+    # unit = models.ForeignKey('N_Unit')
+
+    def __str__(self):
+        return self.name
+
+
+
+
+
+class Customer(models.Model):
+
+    objects = CustomerManager()
+
+    PREFIX = (
+        ('Sir', 'Sir'),
+        ('Mr', 'Mr'),
+        ('Mrs', 'Mrs'),
+        ('Mss', 'Mss'),
+        ('Ms', 'Ms'),
+    )
+
+    SUFFIX = (('Jr','Jr'),)
+
+
+
+    prefix = models.CharField(max_length=5, null=True, choices=PREFIX, blank=True)
+    suffix = models.CharField(max_length=5, null=True, choices=SUFFIX, blank=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField(unique=True, validators=[EmailValidator()])
+    company = models.ForeignKey('N_Company',null=True)
+    comments = models.TextField(null=True)
+    business = models.ForeignKey(Business)
+    activo = models.BooleanField(default=True)
+
+    def full_name(self):
+        return (self.prefix or '') + ' ' + self.first_name + ' ' + self.last_name + ' ' + (self.suffix or '')
+
+    def __str__(self):
+        return self.first_name
+
+# class SubscriptionType(models.Model):
+#     type = models.ForeignKey('N_SubscriptionType')
+#     cost = models.DecimalField(decimal_places=3, max_digits=9)
+#     period = models.IntegerField() #days
+#     description = models.TextField()
+#
+#     TRIAL = 1
+#     # MEMEBER = 2
+#
+#     def __str__(self):
+#         return self.type.name
+
+
+
+
+# class Subscription(models.Model):
+#     ORDER_ERROR = -1
+#     ERROR = -2
+#     ERRORS = [ORDER_ERROR, ERROR]
+#     objects = SuscriptionManager()
+#     type = models.ForeignKey(SubscriptionType)
+#     business = models.ForeignKey(Business, related_name='subscriptions')
+#     # active = models.BooleanField(default=False)
+#     create_at = models.DateField(auto_now_add=True)
+#     expire_date = models.DateField()
+#     order = models.ForeignKey('Order', null=True)
+#     # current = models.BooleanField(default=True)
+#     status = models.ForeignKey('N_SubscriptionStatus')
+#
+#     def is_active(self):
+#         return self.status.id == N_SubscriptionStatus.ACTIVE
+#
+#     def has_payment_order(self):
+#         return self.order
+#
+#     def create_payment_order(self):
+#         if self.has_payment_order():
+#             return self.ORDER_ERROR
+#         #   expire_date hay que ver
+#         try:
+#             type = N_OrderType.objects.get(pk=N_OrderType.SUBSCRIPTION)
+#             order = Order.objects.create_order(self.expire_date, self.type.cost, type=type)
+#             order.save()
+#             self.order = order
+#             self.save()
+#             return order
+#         except Exception as e:
+#             print(e)
+#             return self.ERROR
+#
+# class Order(models.Model):
+#
+#     objects=OrderManager()
+#     total_amount = models.DecimalField(decimal_places=3, max_digits=9)
+#     partial_amount = models.DecimalField(decimal_places=3, max_digits=9, default=0)
+#     paid = models.BooleanField(default=False)
+#     create_at = models.DateField(auto_now_add=True)
+#     last_update = models.DateField(null=True)
+#     due_date = models.DateField(auto_now_add=True)
+#     type = models.ForeignKey('N_OrderType')
+
+
+class ConfirmEmailOrder(models.Model):
+
+    OK = 0
+    EMAIL_ERROR = -1
+    EXPIRED = -2
+
+    objects = ConfirmEmailManager()
+    key = models.CharField(max_length=255)
+    checked = models.BooleanField(default=False)
+    pending = models.BooleanField(default=True)
+    user = models.ForeignKey(User, related_name='orders')
+    expire_date = models.DateTimeField(default=timezone.now)
+
+    create_at = models.DateTimeField(default=timezone.now)
+
+
+    def invoke(self):
+        if self.expire_date.date() < datetime.today().date():
+            return self.EXPIRED
+        self.user.is_active = True
+        try:
+            Business.objects.check_user_integrity(self.user.email)
+            self.user.save()
+            self.checked = True
+            self.pending = False
+            self.save()
+            return self.OK
+        except:
+            return self.EMAIL_ERROR
+    def __unicode__(self):
+        return self.user.first_name
+
+class Notification(models.Model):
+
+    objects = NotificationManager()
+    type = models.ForeignKey('N_NotificationType')
+    title = models.CharField(max_length=50)
+    body = models.TextField(max_length=150)
+    user = models.ForeignKey(User)
+    read = models.BooleanField(default=False)
+    create_at = models.DateField(auto_now_add=True)
+
+# Nomencladores
+
+class N_Prefix(models.Model):
+    text = models.CharField(max_length=5)
+
+    def __str__(self):
+        return self.text
+
+class N_Suffix(models.Model):
+    text = models.CharField(max_length=5)
+
+    def __str__(self):
+        return self.text
+
+class N_Company(models.Model):
+    objects = CompanyManager()
+
+    text = models.CharField(max_length=50)
+
+    def __str__(self):
+       return self.text
+
+# class N_SubscriptionType(models.Model):
+#     name = models.CharField(max_length=25)
+#
+#     def __str__(self):
+#        return self.name
+
+# class N_OrderType(models.Model):
+#     SUBSCRIPTION = 1
+#     INVOICE = 2
+#     name = models.CharField(max_length=25)
+#
+#     def __str__(self):
+#        return self.name
+
+# class N_SubscriptionStatus(models.Model):
+#     name = models.CharField(max_length=25)
+#     ACTIVE = 1
+#     PENDIND = 2
+#     EXPIRED = 3
+#
+#     def __str__(self):
+#        return self.name
+
+class N_NotificationType(models.Model):
+    name = models.CharField(max_length=25)
+    title_format = models.CharField(max_length=50)
+    body_format = models.TextField(max_length=150)
+    EXPIRE_DATE_ALERT = 1
+
+
+    def __str__(self):
+       return self.name
+
+# class N_Unit(models.Model):
+#     name = models.CharField(max_length=25)
+#
+#     def __str__(self):
+#        return self.name

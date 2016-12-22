@@ -1,0 +1,33 @@
+{% load widget_tweaks %}
+{% load staticfiles %}
+<fieldset>
+    <legend>Datos del Item</legend>
+
+     <form method="POST" action="{% if item %}{% url 'proposal_item_edit' proposal.id item.id %}{% else %}{% url 'proposal_items' proposal.id %}{% endif %}" id="item_form">
+         {% csrf_token %}
+         <div>
+             Nombre: {% render_field form.oferta %}
+             <div>{{ form.oferta.errors }}</div>
+         </div>
+         <div>
+             Descuento: {% render_field form.discount %}
+             <div>{{ form.discount.errors }}</div>
+         </div>
+         <div>
+             Costo por unidad: {% render_field form.unit_cost %}
+             <div>{{ form.unit_cost.errors }}</div>
+         </div>
+         <div>
+             Descripcion: {% render_field form.description %}
+             <div>{{ form.description.errors }}</div>
+         </div>
+         <button id="button_save_item">Guardar</button>
+         <input type="reset" value="Cancelar"/>
+     </form>
+     <div> Tax: {{ TAX }}</div>
+    {% if item %}
+        <button id="item_delete" data-url="{% url 'proposal_item_delete' proposal.id item.id %}">Eliminar</button>
+    {% endif %}
+</fieldset>
+{#<script type="text/javascript" src="{% static 'base/js/jquery.js' %}"></script>#}
+<script type="text/javascript" src="{% static 'base/js/invoice/item_form.js' %}"></script>

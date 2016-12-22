@@ -1,0 +1,62 @@
+{% extends 'base2.html' %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+
+
+{% block title %} {{ model }} {% endblock %}
+{% block item_customers %} active {% endblock %}
+
+{% block content_header %}
+    <h1>
+        <i class="fa fa-users"></i> {{ model }}
+        <small class="hidden-xs">{{ description }}</small>
+    </h1>
+    <ol class="breadcrumb no-print">
+        <li><a href="#"><i class="fa fa-users"></i> Home</a></li>
+        <li class="active">{{ model }}</li>
+    </ol>
+
+{% endblock %}
+
+<!-- Main content -->
+
+{% block main_content %}
+
+    <div class="clearfix">
+        <div class="pull-right crud-actions">
+
+            <button type="button" class="btn btn-github add no-print" data-toggle="modal"
+                    data-target="#newCustomerModal"
+                    data-modal-title="Nuevo contacto">
+                <i class="fa fa-plus"></i> <span class="hidden-xs">Nuevo contacto</span>
+            </button>
+            <a href="#" class="btn btn-github print no-print"> <i class="fa fa-print"></i> <span class="hidden-xs"> Imprimir</span></a>
+
+            <a href="#" class="btn btn-github no-print"> <i class="fa fa-external-link"></i> <span class="hidden-xs"> Exportar a PDF</span></a>
+        </div>
+    </div>
+    <div id="tableContainer" class="clearfix">
+        {% include 'base/customer/table.html' %}
+    </div>
+<script>
+
+    $(document).ready(function () {
+        $.CustomDatatableFormObject.modal_dialog_id = "#newCustomerModal";
+        $.CustomDatatableFormObject.model_name = "customers";
+        $.CustomDatatableFormObject.datatable_container = "#tableContainer";
+        $.CustomDatatableFormObject.datatable_id = "#customers_table";
+        $.CustomDatatableFormObject.form_id = "#newCustomerModal";
+
+    });
+</script>
+   {% include 'base/includes/modalFormCusomer.html' %}
+
+
+{% endblock %}
+
+{% block js_block_one %}
+
+{% endblock %}
+{% block css_block %}
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatables/dataTables.bootstrap.css' %}"/>
+{% endblock %}

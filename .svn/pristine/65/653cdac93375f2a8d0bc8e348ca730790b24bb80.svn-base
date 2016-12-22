@@ -1,0 +1,440 @@
+from django.http.response import HttpResponse, JsonResponse
+from django.shortcuts import render_to_response
+from django.template.context import RequestContext
+from django.utils.encoding import force_text
+from django.utils.http import urlsafe_base64_decode
+from django.views.generic.base import View
+
+from base.forms import ProposalEventForm, ItemForm
+from base.model_invoice import Event, Proposal, Item, N_Proposal_Status, Invoice, N_Invoice_Status
+from base.models import Business
+from base.tasks import task_send_proposal, OK, task_send_invoice
+
+
+class ProposalEvent(View):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        business = Business.objects.filter(owner=user).first()
+        id = kwargs.get('id')
+        if id:
+            try:
+                proposal = Proposal.objects.get_by_id(id=id, business=business)
+                event = proposal.event
+            except:
+                return HttpResponse(status=404)
+            form = ProposalEventForm(instance=event, initial={'due_date':event.due_date,'business':business,'comment':proposal.client_message})
+        else:
+            form = ProposalEventForm(initial={'business':business})
+        return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form}))
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        business = Business.objects.filter(owner=user).first()
+        form = ProposalEventForm(request.POST, initial={'business':business})
+        errors = {}
+        id = kwargs.get('id')
+
+
+
+        proposal = None
+        if id:
+
+            proposal = Proposal.objects.get_by_id(id=id, business=business)
+            if not proposal:
+                return HttpResponse(status=404)
+
+        if form.is_valid():
+
+            response = Event.objects.create_or_update_proposal_from_event(form.cleaned_data, proposal=proposal)
+
+
+            if response in Event.objects.ERRORS:
+
+               errors['server'] = 'Intente de nuevo'
+               return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form,'errors':errors}))
+            else:
+                return JsonResponse(status=200, data={'proposal_id':response.id}, safe=False)
+        else:
+            return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form,'errors':errors}))
+
+
+class ProposalItemsView(View):
+
+    def get(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        id_invoice = kwargs.get('id_invoice')
+        flag_proposal = id != None
+
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+
+        if flag_proposal:
+            response = Proposal.objects.get_by_id(id, business=business)
+            if response in Proposal.objects.ERRORS:
+                return HttpResponse(status=404)
+
+        else:
+            response = Invoice.objects.get_by_id(id_invoice, business=business)
+            if response in Invoice.objects.ERRORS:
+                return HttpResponse(status=404)
+            response = response.proposal
+
+
+
+        # if request.is_ajax():
+        #     return render_to_response("base/invoice/includes/items.html", RequestContext(request, {'items':response.get_items()}))
+
+
+        form = ItemForm()
+
+        return render_to_response("base/invoice/wizard/item_add_step.html", RequestContext(request, {'proposal':response,'form':form}))
+
+    def post(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+        proposal = Proposal.objects.get_by_id(id, business=business)
+        if proposal in Proposal.objects.ERRORS:
+            return HttpResponse(status=404)
+
+        form = ItemForm(request.POST)
+
+        if form.is_valid():
+            item = proposal.add_item(form.cleaned_data, business)
+            if item in Proposal.ERRORS:
+                return JsonResponse(data={},status=500)
+            return JsonResponse(data={'id_item':item.id})
+        else:
+            return render_to_response("base/invoice/includes/item_form.html", RequestContext(request,{'proposal':proposal, 'form':form}),status=400)
+
+
+class ItemView(View):
+
+     def set_initial(self, item):
+         return {'oferta':item.oferta.name,
+                 'discount':item.discount,
+                 'description':item.description,
+                 'unit_cost':item.unit_cost}
+
+     def get(self, request, *args, **kwargs):
+        id_proposal = kwargs.get('id')
+        id_item = kwargs.get('id_item')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+        response = Proposal.objects.get_by_id(id_proposal, business=business)
+        if response in Proposal.objects.ERRORS:
+            return HttpResponse(status=404)
+
+        if id_item:
+            item = response.get_item_by_id(id_item)
+
+            if item in Proposal.ERRORS:
+                return HttpResponse(status=404)
+
+            form = ItemForm(initial=self.set_initial(item))
+
+            return render_to_response("base/invoice/includes/item_form.html", RequestContext(request, {'proposal':response,'form':form,'item':item}))
+
+        else:
+             return render_to_response("base/invoice/includes/items.html", RequestContext(request, {'items':response.get_items()}))
+
+
+     def post(self, request, *args, **kwargs):
+         id = kwargs.get('id')
+         id_item = kwargs.get('id_item')
+         user = request.user
+         business = Business.objects.get_business_by_user(user=user)
+         response = Proposal.objects.get_by_id(id, business=business)
+         if response in Proposal.objects.ERRORS:
+             return HttpResponse(status=404)
+
+         item = response.get_item_by_id(id_item)
+
+         if item in Proposal.ERRORS:
+             return HttpResponse(status=404)
+
+         form  = ItemForm(request.POST)
+         if form.is_valid():
+             item = Item.objects.update_item(form.cleaned_data, item)
+             if item in Item.objects.ERRORS:
+                 return JsonResponse(status=500, data={})
+             else:
+                 return JsonResponse(data={'id_item':item.id})
+         else:
+             return render_to_response("base/invoice/includes/item_form.html", RequestContext(request, {'proposal':response,'form':form,'item':item}))
+
+class ItemDelete(View):
+
+    def post(self, request, *args, **kwargs):
+        #Aqui tambien viene el id del proposal para comer un poco de ... y verificar si pertenece al business y bla bla bla...
+
+        id = kwargs.get('id_item')
+        print(id)
+        Item.objects.delete_item(id)
+        return HttpResponse()
+
+class ProposalView(View):
+
+    def get(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+
+        if id:
+
+            proposal = Proposal.objects.get_by_id(id=id, business=business)
+            if proposal in Proposal.objects.ERRORS:
+                return HttpResponse(status=404)
+
+
+            return render_to_response("base/invoice/proposal/proposal_detalles.html", RequestContext(request,{'proposal':proposal}))
+        else:
+            proposals = Proposal.objects.get_by_business(business=business)
+            return render_to_response("base/invoice/proposal/proposal_list.html", RequestContext(request,{'proposals':proposals}))
+
+
+class ProposalEmailSend(View):
+
+    def post(self, request, *arg, **kwargs):
+        id = kwargs.get('id')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+
+        proposal = Proposal.objects.get_by_id(id=id, business=business)
+        if proposal in Proposal.objects.ERRORS or proposal.status.id not in [N_Proposal_Status.EDITTING, N_Proposal_Status.DENIED]:
+            return HttpResponse(status=404)
+
+        response = task_send_proposal(proposal)
+
+        if response == OK:
+            return JsonResponse(status=200, data={})
+        else:
+            return JsonResponse(status=500, data={})
+
+class ProposalDeny(View):
+
+    def get(self, request, *args, **kwargs):
+        pidb64 = kwargs.get('pidb64')
+        tokenb64 = kwargs.get('token')
+        id = kwargs.get('id')
+        if id:
+            user = request.user
+            business = Business.objects.get_business_by_user(user=user)
+
+            proposal = Proposal.objects.get_by_id(id=id, business=business)
+
+            if proposal in Proposal.objects.ERRORS:
+                return HttpResponse(status=404)
+            response = proposal.deny_by_business();
+
+            if response in Proposal.ERRORS:
+                return JsonResponse(data={'error':response},status=400)
+            return JsonResponse(data={'id':response.id})
+        try:
+            id = force_text(urlsafe_base64_decode(pidb64))
+            token = force_text(urlsafe_base64_decode(tokenb64))
+
+            response = Proposal.objects.deny_proposal(id=id, token=token)
+            print(response)
+            if response == Proposal.objects.ERROR_TOKEN:
+                return render_to_response("base/invoice/proposal/failed.html")
+            elif response == Proposal.objects.ERROR_EXPIRED:
+                return render_to_response("base/invoice/proposal/failed.html")
+            else:
+                return render_to_response("base/invoice/proposal/denied_success.html")
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400)
+
+
+
+class ProposalAccept(View):
+
+    def get(self, request, *args, **kwargs):
+        pidb64 = kwargs.get('pidb64')
+        tokenb64 = kwargs.get('token')
+
+        id = kwargs.get('id')
+        if id:
+            user = request.user
+            business = Business.objects.get_business_by_user(user=user)
+
+            proposal = Proposal.objects.get_by_id(id=id, business=business)
+
+            if proposal in Proposal.objects.ERRORS:
+                return HttpResponse(status=404)
+            response = proposal.accept_by_business();
+
+            if response in Proposal.ERRORS:
+                return JsonResponse(data={'error':response},status=400)
+            return JsonResponse(data={'id':response.id})
+
+        else:
+            try:
+                id = force_text(urlsafe_base64_decode(pidb64))
+                token = force_text(urlsafe_base64_decode(tokenb64))
+
+                response = Proposal.objects.accpet_proposal(id=id, token=token)
+                print(response)
+                if response in Proposal.objects.ERRORS:
+                    return render_to_response("base/invoice/proposal/failed.html")
+                else:
+                    return render_to_response("base/invoice/proposal/accepted_success.html")
+            except Exception as e:
+                print(e)
+                return HttpResponse(status=400)
+
+class InvoiceView(View):
+
+    def get(self, request, *args, **kwargs):
+        id = kwargs.get('id')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+
+        if id:
+            invoice = Invoice.objects.get_by_id(id=id, business=business)
+            if invoice in Invoice.objects.ERRORS:
+                return HttpResponse(status=404)
+            else:
+                return render_to_response("base/invoice/invoice_detalles.html", RequestContext(request,{'invoice':invoice}))
+        else:
+            invoices = Invoice.objects.get_by_business(business=business)
+            return render_to_response("base/invoice/invoice_list.html",RequestContext(request, {'invoices':invoices}))
+
+
+class InvoiceEvent(View):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        business = Business.objects.filter(owner=user).first()
+
+        id = kwargs.get('id')
+        if id:
+            try:
+                invoice = Invoice.objects.get_by_id(id=id, business=business)
+                event = invoice.proposal.event
+            except:
+                return HttpResponse(status=404)
+            form = ProposalEventForm(instance=event, initial={'due_date':event.due_date,'business':business,'comment':invoice.proposal.client_message})
+        else:
+            form = ProposalEventForm(initial={'business':business})
+        return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form}))
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        business = Business.objects.filter(owner=user).first()
+        form = ProposalEventForm(request.POST, initial={'business':business})
+        errors = {}
+        id = kwargs.get('id')
+
+
+
+        invoice = None
+        if id:
+            invoice = Invoice.objects.get_by_id(id=id, business=business)
+
+            if not invoice:
+                return HttpResponse(status=404)
+
+        if form.is_valid():
+
+            response = Event.objects.create_or_update_invoice_from_event(data=form.cleaned_data, invoice=invoice)
+
+
+            if response in Event.objects.ERRORS:
+
+               errors['server'] = 'Intente de nuevo'
+               return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form,'errors':errors}))
+            else:
+                return JsonResponse(status=200, data={'invoice_id':response.id}, safe=False)
+        else:
+            return render_to_response('base/invoice/wizard/event_step.html', RequestContext(request, {'form':form,'errors':errors}))
+
+class InvoiceEmailSend(View):
+
+    def post(self, request, *arg, **kwargs):
+        id = kwargs.get('id')
+        user = request.user
+        business = Business.objects.get_business_by_user(user=user)
+
+        invoice = Invoice.objects.get_by_id(id=id, business=business)
+        if invoice in Invoice.objects.ERRORS or invoice.status.id not in [N_Invoice_Status.EDITTING, N_Invoice_Status.CREATED]:
+            return HttpResponse(status=404)
+
+        response = task_send_invoice(invoice)
+
+        if response == OK:
+            return JsonResponse(status=200, data={})
+        else:
+            return JsonResponse(status=500, data={})
+
+class InvoiceAccept(View):
+    def get(self, request, *args, **kwargs):
+        iidb64 = kwargs.get('iidb64')
+        tokenb64 = kwargs.get('token')
+
+        id = kwargs.get('id')
+        if id:
+            user = request.user
+            business = Business.objects.get_business_by_user(user=user)
+
+            invoice = Invoice.objects.get_by_id(id=id, business=business)
+
+            if invoice in Invoice.objects.ERRORS:
+                return HttpResponse(status=404)
+            response = invoice.accept_by_business();
+
+            if response in Invoice.ERRORS:
+                return JsonResponse(data={'error':response},status=400)
+            return JsonResponse(data={'id':response.id})
+
+        else:
+            try:
+                id = force_text(urlsafe_base64_decode(iidb64))
+                token = force_text(urlsafe_base64_decode(tokenb64))
+
+                response = Invoice.objects.accpet_invoice(id=id, token=token)
+                print(response)
+                if response in Invoice.objects.ERRORS:
+                    return render_to_response("base/invoice/invoice_failed.html")
+                else:
+                    return render_to_response("base/invoice/invoice_accepted_success.html", RequestContext(request,{'invoice':response}))
+            except Exception as e:
+                print(e)
+                return HttpResponse(status=400)
+
+class InvoiceCancell(View):
+
+    def get(self, request, *args, **kwargs):
+        iidb64 = kwargs.get('iidb64')
+        tokenb64 = kwargs.get('token')
+        id = kwargs.get('id')
+        if id:
+            user = request.user
+            business = Business.objects.get_business_by_user(user=user)
+
+            invoice = Invoice.objects.get_by_id(id=id, business=business)
+
+            if invoice in Invoice.objects.ERRORS:
+                return HttpResponse(status=404)
+            response = invoice.cancel_by_business();
+
+            if response in Invoice.ERRORS:
+                return JsonResponse(data={'error':response},status=400)
+            return JsonResponse(data={'id':response.id})
+        try:
+            id = force_text(urlsafe_base64_decode(iidb64))
+            token = force_text(urlsafe_base64_decode(tokenb64))
+
+            response = Invoice.objects.cancel_invoice(id=id, token=token)
+            print(response)
+            if response == Invoice.objects.ERROR_TOKEN:
+                return render_to_response("base/invoice/invoice_failed.html")
+            elif response == Invoice.objects.ERROR_EXPIRED:
+                return render_to_response("base/invoice/invoice_failed.html")
+            else:
+                return render_to_response("base/invoice/invoice_cancelled_success.html")
+        except Exception as e:
+            print(e)
+            return HttpResponse(status=400)

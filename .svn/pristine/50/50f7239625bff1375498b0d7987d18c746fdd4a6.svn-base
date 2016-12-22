@@ -1,0 +1,466 @@
+from datetime import datetime
+from django.db import models
+
+#Managers
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
+
+class EventManager(models.Manager):
+    ERROR = -1
+    ERRORS = [ERROR]
+    def get_event_by(self, id):
+        return self.get(pk=id)
+
+    def create_or_update_invoice_from_event(self, data, invoice):
+
+        if invoice:
+            response = self.create_or_update_proposal_from_event(data, proposal=invoice.proposal)
+            if response in self.ERRORS:
+                return response
+            else:
+                return invoice
+        else:
+           response = self.create_or_update_proposal_from_event(data)
+           if response in self.ERRORS:
+                return response
+           else:
+                response = Invoice.objects.create_from_proposal(proposal=response)
+                if response in Invoice.objects.ERRORS:
+                    return self.ERROR
+                else:
+                    return response
+
+    def create_or_update_proposal_from_event(self, data, proposal=None):
+        comment = data.get('comment')
+        if proposal:
+            response = self.create_or_update_event(data=data, instance=proposal.event)
+            if response not in self.ERRORS:
+                proposal.client_message = comment
+                proposal.save()
+                return proposal
+            else:
+                return response
+        else:
+            response = self.create_or_update_event(data=data )
+            if response in self.ERRORS:
+                return response
+
+
+            try:
+               proposal =  Proposal.objects.create_proposal(event=response,client_message=comment)
+               return proposal
+            except Exception as e:
+                print(e)
+                return self.ERROR
+
+
+    def create_or_update_event(self, data, instance=None):
+        name = data.get('name')
+        address = data.get('address')
+        event_date = data.get('event_date')
+        due_date = data.get('due_date')
+        customer = data.get('customer')
+
+        try:
+            if instance:
+                instance.name = name
+                instance.address = address
+                instance.event_date = event_date
+                instance.due_date = due_date
+                instance.customer = customer
+
+                instance.save()
+
+                return instance
+            else:
+                event = self.create(name=name, address=address, event_date = event_date, due_date=due_date, customer=customer)
+
+                return event
+        except Exception as e:
+            print(e)
+            return self.ERROR
+
+class ProposalManager(models.Manager):
+    ERROR = -1
+    ERROR_TOKEN = -2
+    ERROR_EXPIRED = -3
+    ERROR_INVOICE = -4
+    ERRORS = [ERROR, ERROR_TOKEN,ERROR_EXPIRED]
+    def generate_number(self):
+        return int(datetime.today().timestamp() * 1000000)
+    def create_proposal(self, event, client_message):
+        status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.EDITTING)
+        return self.create(event=event, status=status, number=self.generate_number(), client_message=client_message)
+
+    def get_by_id(self, id, business=None, hide_cancelled=True):
+        query = self.filter(id=id)
+        if hide_cancelled:
+            query.exclude(status=N_Proposal_Status.CANCELLED)
+        if business:
+            query.filter(event__customer__business=business)
+        p = query.first()
+        if p:
+            return p
+        else:
+            return self.ERROR
+
+    def get_by_business(self, business, hide_cancelled=True):
+        query = self.filter(event__customer__business=business)
+        if hide_cancelled:
+            query.exclude(status=N_Invoice_Status.CANCELLED)
+        return query
+
+
+
+    def deny_proposal(self, id, token):
+        p = self.filter(id=id).filter(send_token=token).filter(status=N_Proposal_Status.PENDING).first()
+        if p:
+            if p.has_expired():
+                return self.ERROR_EXPIRED
+            p.deny()
+            # p.reset_token()
+            # p.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.DENIED)
+            # p.save()
+            return p
+        else:
+            return self.ERROR_TOKEN
+
+    def accpet_proposal(self, id, token):
+        p = self.filter(id=id).filter(send_token=token).filter(status=N_Proposal_Status.PENDING).first()
+        if p:
+            if p.has_expired():
+                return self.ERROR_EXPIRED
+            response = p.accept()
+            # response = Invoice.objects.create_from_proposal(proposal=p)
+            if response in Invoice.objects.ERRORS:
+                return self.ERROR_INVOICE
+            # p.reset_token()
+            # p.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.ACCEPTED)
+            # p.save()
+            return p
+        else:
+            return self.ERROR_TOKEN
+
+
+class InvoiceManager(models.Manager):
+    ERROR = -1
+    ERROR_TOKEN = -2
+    ERROR_EXPIRED = -3
+    ERRORS = [ERROR, ERROR_EXPIRED, ERROR_TOKEN]
+    def generate_number(self):
+        return int(datetime.today().timestamp() * 1000000)
+
+    def create_from_proposal(self, proposal, handly=False):
+        try:
+            status = N_Invoice_Status.objects.get(pk=N_Invoice_Status.CREATED)
+            if handly:
+                status = N_Invoice_Status.objects.get(pk=N_Invoice_Status.EDITTING)
+            invoice = self.create(number=self.generate_number(), proposal=proposal, status=status)
+            return invoice
+        except Exception as e:
+            print(e)
+            return self.ERROR
+
+    def get_by_id(self, id, business=None, hide_cancelled=True):
+        query = self.filter(id=id)
+        if hide_cancelled:
+            query.exclude(status=N_Invoice_Status.CANCELLED)
+        if business:
+            query.filter(proposal__event__customer__business=business)
+        inv = query.first()
+        if inv:
+            return inv
+        else:
+            return self.ERROR
+
+    def get_by_business(self, business, hide_cancelled=True):
+        query = self.filter(proposal__event__customer__business=business)
+        if hide_cancelled:
+            query.exclude(status=N_Invoice_Status.CANCELLED)
+        return query
+
+    def cancel_invoice(self, id, token):
+        inv = self.filter(id=id).filter(send_token=token).filter(status=N_Invoice_Status.PENDING).first()
+        if inv:
+            if inv.proposal.has_expired():
+                return self.ERROR_EXPIRED
+            inv.cancel()
+            # p.reset_token()
+            # p.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.DENIED)
+            # p.save()
+            return inv
+        else:
+            return self.ERROR_TOKEN
+
+    def accpet_invoice(self, id, token):
+        inv = self.filter(id=id).filter(send_token=token).filter(status=N_Invoice_Status.PENDING).first()
+        if inv:
+            if inv.proposal.has_expired():
+                return self.ERROR_EXPIRED
+            response = inv.accept()
+            # response = Invoice.objects.create_from_proposal(proposal=p)
+            if response in Invoice.objects.ERRORS:
+                return self.ERROR_INVOICE
+            # p.reset_token()
+            # p.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.ACCEPTED)
+            # p.save()
+            return inv
+        else:
+            return self.ERROR_TOKEN
+
+class ItemManager(models.Manager):
+     ERROR = -1
+     ERRORS = [ERROR]
+     def update_item(self, data, item):
+          try:
+              oferta = data.get('oferta')
+              oferta = Oferta.objects.get_oferta_by_name(name=oferta, business=item.oferta.business)
+              discount = data.get('discount')
+              unit_cost = data.get('unit_cost')
+              description = data.get('description')
+
+              item.oferta = oferta
+              item.discount = discount
+              item.description = description
+              item.unit_cost = unit_cost
+
+              item.save()
+              return item
+          except:
+              return self.ERROR
+
+     def delete_item(self,id):
+         try:
+            item = self.get(pk=id)
+            item.delete()
+         except Exception as e:
+             print(e)
+             pass
+
+
+
+#Models
+from base.models import Customer, Oferta, Order, N_OrderType
+
+
+class Event(models.Model):
+    objects = EventManager()
+    name = models.CharField(max_length=25)
+    address = models.CharField(max_length=150)
+    event_date = models.DateTimeField()
+    due_date = models.DateField()
+    customer = models.ForeignKey(Customer)
+
+    def __str__(self):
+        return self.name
+
+class Request(models.Model):
+    event = models.ForeignKey(Event)
+    oferta = models.ForeignKey(Oferta)
+    quantity = models.IntegerField()
+
+
+
+
+class Proposal(models.Model):
+
+    ERROR = -1
+    ERRORS = [ERROR]
+    objects = ProposalManager()
+    event = models.ForeignKey(Event)
+    status = models.ForeignKey('N_Proposal_Status')
+    client_message = models.TextField(max_length=150, null=True)
+    number = models.IntegerField()
+    send_token = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def get_items(self):
+        return self.item_set.all()
+
+    def __str__(self):
+        return self.event.name
+
+    def get_item_by_id(self, id):
+        try:
+            return self.item_set.get(pk=id)
+        except:
+            return self.ERROR
+
+    def add_item(self, data, business):
+        try:
+            oferta = data.get('oferta')
+            oferta = Oferta.objects.get_oferta_by_name(name=oferta, business=business)
+            discount = data.get('discount')
+            unit_cost = data.get('unit_cost')
+            description = data.get('description')
+
+            item = Item.objects.create(oferta=oferta, discount=discount, description=description, unit_cost=unit_cost, proposal=self)
+            return item
+        except Exception as e:
+            print(e)
+            return self.ERROR
+
+    def may_send_email(self):
+        return self.status.id in [N_Proposal_Status.DENIED, N_Proposal_Status.EDITTING]
+    def has_expired(self):
+
+        return self.event.due_date < datetime.date(datetime.today())
+
+    def generate_token(self):
+        token = int(datetime.today().timestamp() * 1000000)
+        self.send_token = token
+        self.save()
+        token = urlsafe_base64_encode(force_bytes(token))
+        return token
+
+    def deny_by_business(self):
+        if self.status.id == N_Proposal_Status.PENDING:
+            self.deny()
+            return self
+        return self.ERROR
+
+    def accept_by_business(self):
+        if self.status.id in [N_Proposal_Status.PENDING, N_Proposal_Status.DENIED]:
+            self.accept()
+            return self
+        return self.ERROR
+
+    def deny(self):
+        self.reset_token()
+        self.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.DENIED)
+        self.save()
+
+    def accept(self):
+          response = Invoice.objects.create_from_proposal(proposal=self)
+          if response in Invoice.objects.ERRORS:
+               return response
+          self.reset_token()
+          self.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.ACCEPTED)
+          self.save()
+    # def get_safe_token(self):
+    #     if self.send_token == 0:
+    #         return None
+    #     else:
+    #         return urlsafe_base64_encode(force_bytes(self.send_token))
+
+    def reset_token(self):
+
+        self.send_token = 0
+        self.save()
+
+    def has_been_sent(self):
+        self.status = N_Proposal_Status.objects.get(pk=N_Proposal_Status.PENDING)
+        self.save()
+
+
+class Invoice(models.Model):
+
+    objects = InvoiceManager()
+    proposal = models.ForeignKey(Proposal)
+    status = models.ForeignKey('N_Invoice_Status')
+    order = models.ForeignKey(Order, null=True)
+    number = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    send_token = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.proposal.event.name
+
+    def generate_token(self):
+        token = int(datetime.today().timestamp() * 1000000)
+        self.send_token = token
+        self.save()
+        token = urlsafe_base64_encode(force_bytes(token))
+        return token
+
+    def has_been_sent(self):
+        self.status = N_Invoice_Status.objects.get(pk=N_Invoice_Status.PENDING)
+        self.save()
+
+    def reset_token(self):
+        self.send_token = 0
+        self.save()
+
+    def may_send_email(self):
+        return self.status.id in [N_Invoice_Status.EDITTING, N_Invoice_Status.CREATED]
+
+    def cancel_by_business(self):
+        if self.status.id not in [N_Invoice_Status.ACCEPTED, N_Invoice_Status.PAID]:
+            self.cancel()
+            return self
+        return self.ERROR
+
+    def accept_by_business(self):
+        if self.status.id in [N_Invoice_Status.PENDING, N_Invoice_Status.EDITTING, N_Invoice_Status.CREATED]:
+            self.accept()
+            return self
+        return self.ERROR
+
+    def cancel(self):
+        self.reset_token()
+        self.status = N_Invoice_Status.objects.get(pk=N_Invoice_Status.CANCELLED)
+        self.save()
+
+    def accept(self):
+        type = N_OrderType.objects.get(pk=N_OrderType.INVOICE)
+        order = Order.objects.create_order(due_date=self.proposal.event.due_date, amount=self.get_total_amount(),type=type)
+        self.order = order
+        self.reset_token()
+        self.status = N_Invoice_Status.objects.get(pk=N_Invoice_Status.ACCEPTED)
+        self.save()
+
+    def get_total_amount(self):
+        return 0
+
+    # def get_safe_token(self):
+    #     if self.send_token == 0:
+    #         return None
+    #     else:
+    #         return urlsafe_base64_encode(force_bytes(self.send_token))
+
+class Item(models.Model):
+    objects = ItemManager()
+    proposal = models.ForeignKey(Proposal)
+    oferta = models.ForeignKey(Oferta)
+    unit_cost = models.DecimalField(max_digits=9, decimal_places=2)
+    discount = models.DecimalField(max_digits=4, decimal_places=2)
+    description = models.TextField(max_length=150)
+
+    def __str__(self):
+        return self.oferta.name
+
+
+
+
+
+#Nomenclators
+
+class N_Proposal_Status(models.Model):
+    EDITTING = 1
+    PENDING = 2
+    ACCEPTED = 3
+    DENIED = 4
+    CANCELLED = 5
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'
+
+class N_Invoice_Status(models.Model):
+    CREATED = 1
+    EDITTING = 2
+    PENDING = 3
+    PAID = 4
+    CANCELLED = 5
+    ACCEPTED = 6
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="dataSourceStorage">
+  <data-source source="LOCAL" name="Django default" product="" version="" jdbc-version="" driver-name="" driver-version="" uuid="65ed8383-7faa-48f9-b7e1-0c112fd01973">
+    <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+    <jdbc-url>jdbc:sqlite:D:\Desarrollo\caterfull\db.sqlite3</jdbc-url>
+    <libraries/>
+  </data-source>
+  <data-source source="LOCAL" name="db" product="" version="" jdbc-version="" driver-name="" driver-version="" uuid="cf0bfbe6-7099-417d-9f01-25850a8632c3">
+    <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+    <jdbc-url>jdbc:sqlite:D:\Desarrollo\caterfull\db.sqlite3</jdbc-url>
+    <libraries/>
+  </data-source>
+</component>

@@ -1,0 +1,37 @@
+from django.db import models
+
+#Managers
+
+#Models
+
+
+
+#Nomenclators
+
+class N_Proposal_Status(models.Model):
+    EDITTING = 1
+    PENDING = 2
+    ACCEPTED = 3
+    DENIED = 4
+    CANCELLED = 5
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'
+
+class N_Invoice_Status(models.Model):
+    CREATED = 1
+    EDITTING = 2
+    PENDING = 3
+    PAID = 4
+    CANCELLED = 5
+    name = models.CharField(max_length=25)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'base'

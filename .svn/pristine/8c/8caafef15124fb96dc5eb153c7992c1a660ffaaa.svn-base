@@ -1,0 +1,149 @@
+$(document).ready(function () {
+
+    $('.btn-next').click(function (event) {
+
+        $activeStep = $("ul.steps li.active");
+        var idStep = $activeStep.data('step');
+        var url = $activeStep.data('url');
+        var eventId = $activeStep.data('event-id');
+        console.debug(url);
+        console.debug(idStep);
+
+        switch (idStep) {
+            case 1:
+                if (eventId == -1) {
+                    var form_data = $("#eventForm").serialize();
+                    $.ajax({
+                            url: url,
+                            type: "POST",
+                            data: form_data,
+                            success: function (data, textStatus) {
+                                console.debug(data);
+                                var proposal_id = data.proposal_id;
+                                var items_url =  '/proposal/'+proposal_id+'/items';
+                                $.get(items_url, '', function (data) {
+                                    $('#items').append(data);
+
+                                });
+                            $("ul.steps li.active").toggleClass('selected').toggleClass('active').addClass('complete');
+                            $('ul.steps li[data-step="2"]').addClass('active');
+
+                            },
+                            error:function(data,txtStatus){
+                                console.debug(data);
+                                $("#eventForm").empty().append(data.responseText);
+                            }
+                        }
+                    )
+                }
+                else {
+                     $.ajax({
+                            url: url,
+                            success: function (data, textStatus) {
+                                $.get('/proposal//items/', '', function (data) {
+                                    $('#items').append(data);
+
+                                });
+                            }
+                        }
+                    )
+                }
+                break;
+        }
+
+
+        //event.preventDefault();
+        //$.ajax({
+        //        url: $.CustomDatatableFormObject.get_url_edit(),
+        //        success: function (data, textStatus) {
+        //            $('.modal-body').append(data);
+        //        }
+        //    }
+        //)
+
+        var url = $(this).attr('data-url');
+        $.get(url, '', function (data) {
+            $('#customer-form').append(data);
+            $('#add_client').show();
+            console.log($('#newCustomerForm'));
+        });
+      //  $(this).hide();
+    });
+
+
+
+    $('#load_client_form').click(function (event) {
+        event.preventDefault();
+        var url = $(this).attr('data-url');
+        $.get(url, '', function (data) {
+            $('#customer-form').append(data);
+            $('#add_client').show();
+            console.log($('#newCustomerForm'));
+        });
+        $(this).hide();
+    });
+
+    function set_csrf_token() {
+        var csrftoken = $('input[name="csrfmiddlewaretoken"]').val();
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    //alert(csrftoken);
+                }
+            }
+        });
+    }
+
+    $('#add_client').click(function (event) {
+
+        event.preventDefault();
+        var url = $('#newCustomerForm').attr('action');
+
+        var data = $('#newCustomerForm').serialize();
+        console.log(url);
+        console.log(data);
+        set_csrf_token();
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: data,
+            statusCode: {
+                200: function (response) {
+                    $(this).hide();
+                    $('#customer-form').empty();
+                    $('#load_client_form').show();
+                    var url_reload = $('#add_client').attr('data-url')
+                    console.log(response.id);
+                    $.get(url_reload, {id: response.id}, function (data) {
+                        $('#customer_field').html(data);
+                    });
+                    $('#add_client').hide();
+                },
+                400: function (response) {
+
+                    $('#customer-form').empty();
+                    $('#customer-form').append(response.responseText);
+                }
+            }
+        });
+        //$.post(url, data, function(response, status){
+        //    console.log(response);
+        //    console.log(status);
+        //    if(status == 200){
+        //
+        //    }else if (status == 400){
+        //
+        //    }
+        //})
+
+
+    });
+
+});

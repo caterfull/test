@@ -1,0 +1,101 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Website - Gallery {% endblock %}
+{% block main_content %}
+    <form id="form_image" action="/site/photos/add" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="col-lg-6">
+            {{ form }}
+            <input type="submit" id="plus" name="plus" value="+"/>
+        </div>
+    </form>
+
+    <form action="" method="post" id="gallery_form">
+        {% csrf_token %}
+        <div class="col-lg-6">
+
+            <label for="comments">Gallery Comments</label>
+            <textarea name="comments" id="comments" cols="30" rows="5"
+                      placeholder="Some comments about the gallery.">{{ comments }}</textarea>
+        </div>
+        <input type="hidden" id="as_back" name="as_back" value=""/>
+
+        <div id="tableContainer" class="clearfix">
+            {% include 'business_site/gallery/table.html' %}
+        </div>
+
+        <input type="button" value="Back">
+        <input type="submit" value="Next" id="next">
+    </form>
+{% endblock %}
+
+{% block js_block_one %}
+    <script>
+        {#    #}
+        $(document).ready(function () {
+
+            function PutIdRadioCheck() {
+                var i;
+                var j;
+                var long = $('#images_table > tbody > tr').length
+                for (i = 0; i < long; i++) {
+                    var cant = $('#images_table > tbody > tr')[i].children.length;
+                    for (j = 0; j < cant; j++) {
+                        if ($('#images_table > tbody > tr')[i].children[j].firstChild.checked == true) {
+                            val = $('#images_table > tbody > tr')[i].children[j].firstChild.attributes['data-elem-id'].value;
+                            $('#as_back').val(val);
+                        }
+                    }
+                }
+            }
+
+            {#        $('#gallery_form').submit(function(){#}
+            {#            PutIdRadioCheck();#}
+            {#        });#}
+
+            $('#next').click(function (e) {
+                e.preventDefault();
+                PutIdRadioCheck();
+                $('#gallery_form').submit();
+            })
+
+
+            $('#form_image').ajaxForm({
+                success: function (response) {
+                    UpdateDataTable();
+                    ClearForm();
+                }
+            });
+
+            function ClearForm() {
+                $('#id_name').val('');
+                document.getElementById("id_image").value = "";
+            }
+
+            function UpdateDataTable() {
+                $.ajax({
+                    type: 'GET',
+                    url: '/site/photos/',
+                    success: function (data) {
+                        console.debug(data);
+                        $("#tableContainer").empty().append(data);
+                        $('#images_table').dataTable();
+                    }
+                });
+            }
+
+        });
+        $(function () {
+            // Initialize Datatable
+            $('#images_table').dataTable();
+        });
+    </script>
+
+{% endblock %}
+{% block css_block %}
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatables/dataTables.bootstrap.css' %}"/>
+{% endblock %}

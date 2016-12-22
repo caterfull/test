@@ -1,0 +1,104 @@
+{% extends 'base2.html' %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+
+{% block title %} Nuevo proposal {% endblock %}
+{% block item_proposals %} active {% endblock %}
+
+{% block content_header %}
+    <h1>
+        <i class="fa fa-inbox"></i> Nuevo proposal
+        <small class="hidden-xs">Crear un nuevo presupuesto</small>
+    </h1>
+    <ol class="breadcrumb no-print">
+        <li><a href="#"><i class="fa fa-inbox"></i> Home</a></li>
+        <li><a href="{% url 'proposal_list' %}">Proposal</a></li>
+        <li class="active">Nuevo</li>
+    </ol>
+{% endblock %}
+{% block main_content %}
+{#  data-items-cant="{% if proposal %} {{ proposal.get_items | length }} {% endif %}"#}
+    <input type="hidden" id="current_url" value="{% if id %}{% url 'proposal_event_edit' id %} {% else %}{% url 'proposal_event_create' %}{% endif %}"/>
+    <div id="fuelux-wizard-container">
+        <div>
+            <ul class="steps">
+                <li class="event"
+                    data-step="1"
+                    data-url="{% url 'proposal_event_create' %}"
+                    data-next-url=""
+                    data-event-id="{% if event %}{{ event.id }}{% else %}-1{% endif %}">
+                    <span class="step">1</span>
+                    <span class="title">Datos del evento</span>
+                </li>
+
+                <li class="items" data-step="2"
+                    data-url="/proposal/"
+
+                    data-event-id="{% if event %}{{ event.id }}{% else %}-1{% endif %}">
+                    <span class="step">2</span>
+                    <span class="title">Items</span>
+                </li>
+
+                <li class="confirm" data-step="3">
+                    <span class="step">3</span>
+                    <span class="title">Confirmación</span>
+                </li>
+
+            </ul>
+        </div>
+
+        <hr/>
+    </div>
+    <div class="step-content pos-rel">
+        <div class="step-pane" data-step="1">
+            <h3 class="lighter block green">Especifique los datos del evento</h3>
+
+            <div id="stepContainer1">
+                {#                {% include 'base/invoice/wizard/event_step.html' %}#}
+            </div>
+
+
+        </div>
+
+        <div class="step-pane hidden" data-step="2">
+            <h3 class="lighter block green">Items</h3>
+
+            <div id="stepContainer2">
+
+            </div>
+        </div>
+
+        <div class="step-pane hidden" data-step="3">
+            <h3 class="lighter block green">Confirmación</h3>
+
+            <div id="stepContainer3">
+
+            </div>
+        </div>
+
+
+    </div>
+    <hr/>
+    <div class="wizard-actions clearfix">
+        <div class="pull-right ">
+
+            <button class="btn btn-prev" disabled="disabled">
+                <i class="ace-icon fa fa-arrow-left"></i>
+                Anterior
+            </button>
+
+            <button class="btn btn-success btn-next">
+                <span>Siguiente</span>
+                <i class="ace-icon fa fa-arrow-right icon-on-right"></i>
+            </button>
+              <button class="btn btn-default btn-cancel">
+                <span>Cancelar</span>
+
+            </button>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="{% static 'base/js/invoice/event.js' %}"></script>
+    <script type="text/javascript" src="{% static 'base/js/invoice/item.js' %}"></script>
+
+{% endblock %}

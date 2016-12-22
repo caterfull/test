@@ -1,0 +1,216 @@
+{% extends 'base2.html' %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+
+
+{% block title %} Customers {% endblock %}
+{% block item_customers %} active {% endblock %}
+
+
+
+
+{% block content_header %}
+
+    <h1>
+        <i class="fa fa-users"></i> Customers
+        <small>Listado de clientes</small>
+    </h1>
+    <ol class="breadcrumb no-print">
+        <li><a href="#"><i class="fa fa-users"></i> Home</a></li>
+        <li class="active">Customers</li>
+    </ol>
+
+{% endblock %}
+
+
+<!-- Main content -->
+
+{% block main_content %}
+
+    <div class="clearfix">
+        <div class="pull-right crud-actions">
+
+            <button type="button" class="btn btn-github add no-print" data-toggle="modal"
+                    data-target="#newCustomerModal"
+                    data-modal-title="Nuevo contacto">
+                <i class="fa fa-plus"></i> <span class="hidden-xs">Nuevo contacto</span>
+            </button>
+            <a href="#" class="btn btn-github print no-print"> <i class="fa fa-print"></i> <span class="hidden-xs"> Imprimir</span></a>
+
+            <a href="#" class="btn btn-github no-print"> <i class="fa fa-external-link"></i> <span class="hidden-xs"> Exportar a PDF</span></a>
+        </div>
+    </div>
+    <div id="tableContainer" class="clearfix">
+        {% include 'base/customer/table.html' %}
+    </div>
+
+
+
+
+    {#    {% url 'delete_customer' customer.id%}#}
+
+    {#    <a href="{% url 'edit_customer' customer.id %}">Edit</a>#}
+
+
+
+    <div class="modal fade" id="newCustomerModal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="gridSystemModalLabel">Nuevo contacto</h4>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button id="saveAdd" type="button" class="btn btn-primary">Guardar y adicionar otro</button>
+                    <button id="save" type="button" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+{% endblock %}
+
+{% block js_block_one %}
+
+    <script>
+        $(document).ready(function () {
+
+            {#Adicionar / Editar#}
+            $("#newCustomerModal").on('show.bs.modal',function (e) {
+
+                var $button = $(e.relatedTarget) // Button that triggered the modal
+                var elem_id = $button.data('elem-id') // Extract info from data-* attributes
+                var modal_title = $button.data('modal-title') // Extract info from data-* attributes
+
+                var modal = $(this)
+                modal.find('.modal-title').text(modal_title)
+
+                if ($button.hasClass('add')) {
+                    $.ajax({
+                                url: '/customers/add',
+                                success: function (data, textStatus) {
+                                    $('.modal-body').append(data);
+
+                                }
+                            }
+                    )
+
+                } else if ($button.hasClass('edit')) {
+                    $.ajax({
+                                url: "/customers/edit/" + elem_id,
+                                success: function (data, textStatus) {
+                                    $('.modal-body').append(data);
+                                }
+                            }
+                    )
+                }
+
+            }).on('hidden.bs.modal', function (e) {
+                        $('.modal-body').empty();
+                    });
+
+
+            $("#save").click(function () {
+                SaveFunction(true);
+            });
+            $("#saveAdd").click(function () {
+                if (SaveFunction(false)) {
+                    alert("entro");
+                    $.ajax({
+                                url: '/customers/add',
+                                success: function (data, textStatus) {
+                                    $('.modal-body').append(data);
+                                }
+                            }
+                    )
+                }
+            });
+            function UpdateDataTable() {
+
+                $.ajax({
+                    type: 'GET',
+                    url: '/customers/',
+                    success: function (data) {
+                        $("#tableContainer").empty().append(data);
+                        $('#customers_table').dataTable();
+
+                    }
+                });
+            }
+
+            function SaveFunction(hideModal) {
+                $result = false;
+                var form_data = $("#newCustomerForm").serialize();
+                $.ajax({
+                    type: "POST",
+                    url: '/customers/add',
+                    data: form_data,
+                    success: function (data, status_code) {
+                        $result = true;
+                        console.debug($result);
+                        if (hideModal)
+                            $("#newCustomerModal").modal('toggle');
+
+                        UpdateDataTable();
+                    },
+                    error: function (data) {
+                        console.debug(data);
+                        $(".modal-body").empty().append(data.responseText);
+
+                    }
+                });
+
+                return $result;
+            }
+
+            {##}
+            {#            $("#saveAdd").click(function () {#}
+            {##}
+            {#                var form_data = $("#newCustomerForm").serialize();#}
+            {#                //alert(form_data);#}
+            {##}
+            {#                $.ajax({#}
+            {#                    type: "POST",#}
+            {#                    url: '/customers/add',#}
+            {#                    data: form_data,#}
+            {#                    success: function (data, status_code) {#}
+            {#                        $('.modal-body').append(data);#}
+            {#                    },#}
+            {#                    error: function () {#}
+            {#                        alert("no")#}
+            {#                    }#}
+            {#                });#}
+            {##}
+            {##}
+            {#                $.post('/customers/add',form_data, function(){alert("si")},function(){alert("no")} )#}
+            {##}
+            {#                //$("#newCustomerForm").submit();#}
+            {#            });#}
+            {#            $("a.print").click(function (e) {#}
+            {##}
+            {#        e.preventDefault();#}
+            {#window.print();#}
+            {##}
+            {#            });#}
+
+        });
+
+
+        $(function () {
+            // Initialize Datatable
+            $('#customers_table').dataTable();
+        });
+
+    </script>
+{% endblock %}
+{% block css_block %}
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatables/dataTables.bootstrap.css' %}"/>
+{% endblock %}

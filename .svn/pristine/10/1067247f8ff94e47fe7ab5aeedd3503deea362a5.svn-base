@@ -1,0 +1,19 @@
+<table>
+    <thead>
+        <th>Nombre</th>
+        <th>Descuento</th>
+        <th>Costo por unidad</th>
+        <th>Descripcion</th>
+    </thead>
+    <tbody>
+        {% for item in items %}
+            <tr>
+                <td>{{ item.oferta.name }}</td>
+                <td>{{ item.discount }}</td>
+                <td>{{ item.unit_cost }}</td>
+                <td>{{ item.descrption }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+

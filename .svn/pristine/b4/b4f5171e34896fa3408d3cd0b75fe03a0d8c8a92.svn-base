@@ -1,0 +1,16 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+
+{% block title %} Website - Links {% endblock %}
+{% block main_content %}
+    <form action="" method="post" enctype="multipart/form-data">
+   {% csrf_token %}
+        {{ data }}
+{{ form }}
+     <a href="{% url 'gallery' %}"><input type="button" value="Back"></a>
+     <input type="submit" value="Next">
+    </form>
+{% endblock %}

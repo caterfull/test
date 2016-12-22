@@ -1,0 +1,12 @@
+{% extends 'base2.html' %}
+{% load admin_static %}
+{% load staticfiles %}
+{% load i18n admin_static %}
+{% load widget_tweaks %}
+    {% block title %} Website - Preview {% endblock %}
+{% block main_content %}
+{{ website_basics }}
+{{ gallery }}
+{{ links }}
+{{ contactus }}
+{% endblock %}
